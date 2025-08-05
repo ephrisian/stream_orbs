@@ -1,0 +1,9 @@
+{
+  "name": "stream_orbs",
+  "version": "1.0.0",
+  "description": "Automated tests for orb sync",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test"
+  }
+}

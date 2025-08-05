@@ -120,6 +120,10 @@
     document.getElementById('addOrbBtn').addEventListener('click', addOrbSmart);
     document.getElementById('saveOrbsBtn').addEventListener('click', saveOrbs);
     document.getElementById('loadOrbsBtn').addEventListener('click', loadOrbs);
+    // share any existing orbs with the stage on load
+    if (typeof sendOrbsToStage === 'function') {
+      sendOrbsToStage();
+    }
   </script>
 </body>
 </html>

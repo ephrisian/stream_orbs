@@ -20,5 +20,11 @@
 <body>
   <canvas id="bouncerCanvas" width="405" height="720"></canvas>
   <script src="shared.js"></script>
+  <script>
+    // Ask any open admin page for the current orb setup
+    if (typeof requestOrbSync === 'function') {
+      requestOrbSync();
+    }
+  </script>
 </body>
 </html>
