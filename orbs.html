@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bouncing Orbs with Admin Portal</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      font-family: sans-serif;
+    }
+    #container {
+      display: flex;
+    }
+    canvas {
+      display: block;
+      background: #00ff00;
+      border: 1px solid #444;
+    }
+    #admin {
+      width: 300px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 10px;
+      border-left: 2px solid #555;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    #admin input, #admin select, #admin button {
+      width: 100%;
+      margin-bottom: 5px;
+    }
+    #admin h3 {
+      margin-top: 0;
+    }
+    #orbList > div {
+      border: 1px solid #666;
+      padding: 5px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+<div id="container">
+  <canvas id="bouncerCanvas" width="405" height="720"></canvas>
+  <div id="admin">
+    <h3>🛠️ Admin Panel</h3>
+    <label>Background</label>
+    <input type="color" id="bgColorPicker" value="#00ff00" onchange="updateCanvasBackground()" />
+    <label>Aspect Ratio</label>
+    <select id="aspectRatio" onchange="applyAspectRatio()">
+      <option value="16:9">16:9 (Landscape)</option>
+      <option value="9:16">9:16 (Portrait)</option>
+    </select>
+    <select id="sourceType">
+      <option value="online">Online</option>
+      <option value="local">Local</option>
+    </select>
+    <input id="newOrbInput" placeholder="Paste URL or ID">
+    <input type="file" id="fileInput" accept=".webp,.png,.jpg,.jpeg" style="display:none;">
+    <select id="entryType">
+      <option value="drop">Drop-In</option>
+      <option value="toss">Toss-In</option>
+    </select>
+    <select id="userRole">
+      <option value="none">None</option>
+      <option value="mod">Mod</option>
+      <option value="lurker">Lurker</option>
+      <option value="passerby">PasserBy</option>
+    </select>
+    <input id="roleIcon" placeholder="Role Icon">
+    <input id="orbLabel" placeholder="Label">
+    <input id="orbColor" type="color" value="#ffffff">
+    <input id="orbThickness" type="range" min="1" max="10" value="4">
+    <button onclick="addOrbSmart()">Add Orb</button>
+    <button onclick="saveOrbs()">💾 Save Setup</button>
+    <button onclick="loadOrbs()">📂 Load Setup</button>
+    <hr>
+    <div id="orbList"></div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('bouncerCanvas');
+const ctx = canvas.getContext('2d');
+const orbSize = 64;
+const orbs = [];
+
+function updateCanvasBackground() {
+  canvas.style.backgroundColor = document.getElementById('bgColorPicker').value;
+}
+
+function applyAspectRatio() {
+  const setting = document.getElementById('aspectRatio').value;
+  let targetHeight = canvas.height;
+  let targetWidth = (setting === '16:9') ? Math.floor(targetHeight * 16 / 9) : Math.floor(targetHeight * 9 / 16);
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+  canvas.style.width = targetWidth + 'px';
+  canvas.style.height = targetHeight + 'px';
+}
+
+function addOrb(src = '', entryType = 'drop', role = 'none', label = '', ringColor = '#ffffff', ringWidth = 4, roleIcon = '') {
+  const orb = {
+    img: new Image(),
+    x: Math.random() * (canvas.width - orbSize),
+    y: -orbSize,
+    dx: 0,
+    dy: 0,
+    vx: 2 + Math.random() * 2,
+    dir: Math.random() < 0.5 ? -1 : 1,
+    isEntering: true,
+    entryType,
+    bounceCount: 0,
+    role,
+    label,
+    ringColor,
+    ringWidth,
+    roleIcon,
+    moveTimer: 0,
+    moveState: 'idle'
+  };
+  orb.img.src = src;
+  orbs.push(orb);
+  updateOrbList();
+}
+
+function drawRoundedImage(img, x, y, size) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.clip();
+  ctx.drawImage(img, x, y, size, size);
+  ctx.restore();
+}
+
+function drawEffect(orb) {
+  const cx = orb.x + orbSize / 2;
+  const cy = orb.y + orbSize / 2;
+  ctx.save();
+  if (orb.ringColor && orb.ringWidth > 0) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, orbSize / 2 + orb.ringWidth / 2, 0, Math.PI * 2);
+    ctx.strokeStyle = orb.ringColor;
+    ctx.lineWidth = orb.ringWidth;
+    ctx.stroke();
+  }
+  if (orb.roleIcon) {
+    ctx.font = '28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(orb.roleIcon, cx, orb.y - 10);
+  }
+  if (orb.label) {
+    ctx.font = '16px sans-serif';
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'center';
+    ctx.fillText(orb.label, cx, orb.y - 30);
+  }
+  ctx.restore();
+}
+
+function updateMovement(orb) {
+  orb.moveTimer--;
+  if (orb.moveTimer <= 0) {
+    const rand = Math.random();
+    if (rand < 0.3) {
+      orb.moveState = 'idle';
+      orb.vx = 0;
+    } else if (rand < 0.6) {
+      orb.moveState = 'walk';
+      orb.vx = (Math.random() * 1.5 + 1) * (Math.random() < 0.5 ? -1 : 1);
+    } else {
+      orb.moveState = 'dash';
+      orb.vx = (Math.random() * 4 + 4) * (Math.random() < 0.5 ? -1 : 1);
+    }
+    orb.moveTimer = Math.floor(Math.random() * 90 + 30);
+  }
+  orb.x += orb.vx;
+  if (orb.x <= 0 || orb.x + orbSize >= canvas.width) {
+    orb.x = Math.max(0, Math.min(orb.x, canvas.width - orbSize));
+    orb.vx *= -1;
+  }
+}
+
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const groundY = canvas.height - orbSize - 10;
+  for (let orb of orbs) {
+    if (orb.isEntering) {
+      orb.dy += 0.5;
+      orb.y += orb.dy;
+      if (orb.y + orbSize >= groundY) {
+        orb.y = groundY;
+        orb.dy = -orb.dy * 0.5;
+        orb.bounceCount++;
+        if ((orb.entryType === 'drop' && orb.bounceCount > 1) || (orb.entryType === 'toss' && orb.bounceCount > 2)) {
+          orb.y = groundY;
+          orb.dy = 0;
+          orb.isEntering = false;
+          orb.moveTimer = Math.floor(Math.random() * 90 + 30);
+        }
+      }
+      if (orb.entryType === 'toss') {
+        orb.x += orb.dx;
+        if (orb.x <= 0 || orb.x + orbSize >= canvas.width) orb.dx *= -1;
+      }
+    } else {
+      updateMovement(orb);
+    }
+    drawRoundedImage(orb.img, orb.x, orb.y, orbSize);
+    drawEffect(orb);
+  }
+  requestAnimationFrame(animate);
+}
+
+function addOrbSmart() {
+  const input = document.getElementById('newOrbInput').value.trim();
+  const role = document.getElementById('userRole').value;
+  const entryType = document.getElementById('entryType').value;
+  const label = document.getElementById('orbLabel').value.trim();
+  const ringColor = document.getElementById('orbColor').value;
+  const ringWidth = parseInt(document.getElementById('orbThickness').value);
+  const roleIcon = document.getElementById('roleIcon').value.trim();
+  const sourceType = document.getElementById('sourceType').value;
+  if (sourceType === 'online') {
+    let finalUrl = '';
+    if (input.startsWith('http')) {
+      finalUrl = input;
+    } else if (input.startsWith('users_')) {
+      const parts = input.replace('.webp', '').split('_');
+      const userId = parts[1];
+      const hash = parts.slice(2).join('_') + '.webp';
+      finalUrl = `https://images.whatnot.com/fit-in/1920x0/filters:format(webp)/users%2F${userId}%2F${hash}`;
+    } else if (input.includes('/') && input.includes('.')) {
+      const [userId, hash] = input.split('/');
+      finalUrl = `https://images.whatnot.com/fit-in/1920x0/filters:format(webp)/users%2F${userId}%2F${hash}`;
+    }
+    if (finalUrl) {
+      addOrb(finalUrl, entryType, role, label, ringColor, ringWidth, roleIcon);
+      document.getElementById('newOrbInput').value = '';
+    }
+  } else {
+    const fileInput = document.getElementById('fileInput');
+    fileInput.click();
+    fileInput.onchange = function () {
+      const file = fileInput.files[0];
+      if (file) {
+        const localURL = URL.createObjectURL(file);
+        addOrb(localURL, entryType, role, label, ringColor, ringWidth, roleIcon);
+        fileInput.value = '';
+      }
+    };
+  }
+}
+
+function updateOrbList() {
+  const orbList = document.getElementById('orbList');
+  orbList.innerHTML = '';
+  orbs.forEach((orb, i) => {
+    const container = document.createElement('div');
+    const input = document.createElement('input');
+    input.value = orb.img.src;
+    input.onchange = () => orb.img.src = input.value;
+    const labelInput = document.createElement('input');
+    labelInput.placeholder = "Label";
+    labelInput.value = orb.label || '';
+    labelInput.oninput = () => orb.label = labelInput.value;
+    const roleSelect = document.createElement('select');
+    ['none', 'mod', 'lurker', 'passerby'].forEach(role => {
+      const option = document.createElement('option');
+      option.value = role;
+      option.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+      if (orb.role === role) option.selected = true;
+      roleSelect.appendChild(option);
+    });
+    roleSelect.onchange = () => orb.role = roleSelect.value;
+    const iconInput = document.createElement('input');
+    iconInput.placeholder = "Icon";
+    iconInput.value = orb.roleIcon || '';
+    iconInput.oninput = () => orb.roleIcon = iconInput.value;
+    const colorInput = document.createElement('input');
+    colorInput.type = 'color';
+    colorInput.value = orb.ringColor || '#ffffff';
+    colorInput.oninput = () => orb.ringColor = colorInput.value;
+    const widthInput = document.createElement('input');
+    widthInput.type = 'range';
+    widthInput.min = 1;
+    widthInput.max = 10;
+    widthInput.value = orb.ringWidth || 4;
+    widthInput.oninput = () => orb.ringWidth = parseInt(widthInput.value);
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = '🗑 Remove';
+    removeBtn.onclick = () => {
+      orbs.splice(i, 1);
+      updateOrbList();
+    };
+    container.appendChild(input);
+    container.appendChild(labelInput);
+    container.appendChild(roleSelect);
+    container.appendChild(iconInput);
+    container.appendChild(colorInput);
+    container.appendChild(widthInput);
+    container.appendChild(removeBtn);
+    orbList.appendChild(container);
+  });
+}
+
+function saveOrbs() {
+  const saved = orbs.map(o => ({
+    src: o.img.src,
+    entryType: o.entryType,
+    role: o.role,
+    label: o.label,
+    ringColor: o.ringColor,
+    ringWidth: o.ringWidth,
+    roleIcon: o.roleIcon
+  }));
+  localStorage.setItem('savedOrbs', JSON.stringify(saved));
+}
+
+function loadOrbs() {
+  const data = JSON.parse(localStorage.getItem('savedOrbs') || '[]');
+  orbs.length = 0;
+  data.forEach(o => {
+    addOrb(o.src, o.entryType, o.role, o.label, o.ringColor, o.ringWidth, o.roleIcon);
+  });
+}
+
+updateCanvasBackground();
+applyAspectRatio();
+animate();
+</script>
+</body>
+</html>

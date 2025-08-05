@@ -1,0 +1,125 @@
+<!-- File: admin.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bouncing Orbs - Admin</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      background: #111;
+      color: white;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    #admin {
+      padding: 10px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .form-row input,
+    .form-row select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 4px;
+    }
+    .form-labels {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 6px;
+      font-weight: bold;
+      font-size: 14px;
+      padding-bottom: 4px;
+    }
+    #orbList {
+      margin-top: 20px;
+    }
+    .orb-row {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
+      border: 1px solid #444;
+      padding: 6px;
+      background: #222;
+    }
+    button {
+      margin-top: 5px;
+      padding: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div id="admin">
+    <h3>🛠️ Admin Panel</h3>
+
+    <label for="bgColorPicker">Background</label>
+    <input type="color" id="bgColorPicker" value="#00ff00" />
+
+    <label for="aspectRatio">Aspect Ratio</label>
+    <select id="aspectRatio">
+      <option value="16:9">16:9</option>
+      <option value="9:16">9:16</option>
+    </select>
+
+    <input type="file" id="fileInput" accept=".webp,.png,.jpg,.jpeg" style="display:none;">
+
+    <div class="form-labels">
+      <div>Source</div>
+      <div>Image URL / ID</div>
+      <div>Entry</div>
+      <div>Role</div>
+      <div>Icon</div>
+      <div>Label</div>
+      <div>Color</div>
+      <div>Width</div>
+    </div>
+    <div class="form-row">
+      <select id="sourceType">
+        <option value="online">Online</option>
+        <option value="local">Local</option>
+      </select>
+      <input id="newOrbInput" placeholder="Paste URL or ID">
+      <select id="entryType">
+        <option value="drop">Drop-In</option>
+        <option value="toss">Toss-In</option>
+      </select>
+      <select id="userRole">
+        <option value="none">None</option>
+        <option value="mod">Mod</option>
+        <option value="lurker">Lurker</option>
+        <option value="passerby">Passerby</option>
+      </select>
+      <input id="roleIcon" placeholder="Icon">
+      <input id="orbLabel" placeholder="Label">
+      <input id="orbColor" type="color" value="#ffffff">
+      <input id="orbThickness" type="range" min="1" max="10" value="4">
+    </div>
+
+    <button id="addOrbBtn">➕ Add Orb</button>
+    <button id="saveOrbsBtn">💾 Save Setup</button>
+    <button id="loadOrbsBtn">📂 Load Setup</button>
+
+    <div id="orbList"></div>
+  </div>
+  <script src="shared.js"></script>
+  <script>
+    document.getElementById('bgColorPicker').addEventListener('change', updateCanvasBackground);
+    document.getElementById('aspectRatio').addEventListener('change', applyAspectRatio);
+    document.getElementById('addOrbBtn').addEventListener('click', addOrbSmart);
+    document.getElementById('saveOrbsBtn').addEventListener('click', saveOrbs);
+    document.getElementById('loadOrbsBtn').addEventListener('click', loadOrbs);
+  </script>
+</body>
+</html>
