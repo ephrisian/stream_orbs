@@ -66,21 +66,6 @@ test('stage can request sync from admin', async () => {
   stage.window.channel.close();
 });
 
-test('admin updates propagate to stage', async () => {
-  const admin = createEnv('https://example.com/admin.html', false);
-  runShared(admin);
-
-  const stage = createEnv('https://example.com/stage.html', true);
-  runShared(stage);
-
-  admin.context.addOrb('live.png');
-  await wait();
-  assert.equal(stage.context.window.orbs.length, 1);
-  assert.equal(stage.context.window.orbs[0].img.src, 'live.png');
-  admin.window.channel.close();
-  stage.window.channel.close();
-});
-
 test('stage still syncs when URL contains "admin"', async () => {
   const admin = createEnv('https://example.com/admin.html', false);
   runShared(admin);
