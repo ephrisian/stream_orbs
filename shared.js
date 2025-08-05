@@ -62,12 +62,22 @@ if (isAdmin) {
 function handleMessage(event) {
   const msg = event.data;
   if (!msg) return;
+
   if (msg.type === 'hello') {
     if (partnerId !== msg.id) {
       partnerId = msg.id;
       partnerRole = msg.role;
       window.partnerId = partnerId;
       window.partnerRole = partnerRole;
+      updateConnectionStatus();
+      announcePresence();
+    }
+  } else if (msg.type === 'bye') {
+    if (msg.id === partnerId) {
+      partnerId = null;
+      partnerRole = null;
+      window.partnerId = null;
+      window.partnerRole = null;
       updateConnectionStatus();
       announcePresence();
     }
@@ -78,15 +88,6 @@ function handleMessage(event) {
     msg.data.forEach(o => {
       addOrb(o.src, o.entryType, o.role, o.label, o.ringColor, o.ringWidth, o.roleIcon);
     });
-  } else if (msg.type === 'bye') {
-    if (msg.id === partnerId) {
-      partnerId = null;
-      partnerRole = null;
-      window.partnerId = null;
-      window.partnerRole = null;
-      updateConnectionStatus();
-      announcePresence();
-    }
   }
 }
 
