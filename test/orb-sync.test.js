@@ -66,6 +66,21 @@ test('stage can request sync from admin', async () => {
   stage.window.channel.close();
 });
 
+test('admin updates propagate to stage', async () => {
+  const admin = createEnv('https://example.com/admin.html', false);
+  runShared(admin);
+
+  const stage = createEnv('https://example.com/stage.html', true);
+  runShared(stage);
+
+  admin.context.addOrb('live.png');
+  await wait();
+  assert.equal(stage.context.window.orbs.length, 1);
+  assert.equal(stage.context.window.orbs[0].img.src, 'live.png');
+  admin.window.channel.close();
+  stage.window.channel.close();
+});
+
 test('stage still syncs when URL contains "admin"', async () => {
   const admin = createEnv('https://example.com/admin.html', false);
   runShared(admin);
@@ -82,3 +97,20 @@ test('stage still syncs when URL contains "admin"', async () => {
   admin.window.channel.close();
   stage.window.channel.close();
 });
+
+test('admin and stage report connection IDs', async () => {
+  const admin = createEnv('https://example.com/admin.html', false);
+  runShared(admin);
+  const stage = createEnv('https://example.com/stage.html', true);
+  runShared(stage);
+
+  await wait();
+
+  assert.ok(admin.context.window.partnerId);
+  assert.ok(stage.context.window.partnerId);
+  assert.equal(admin.context.window.partnerId, stage.context.window.clientId);
+  assert.equal(stage.context.window.partnerId, admin.context.window.clientId);
+  admin.window.channel.close();
+  stage.window.channel.close();
+});
+

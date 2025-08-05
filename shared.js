@@ -13,6 +13,27 @@ window.channel = channel;
 // determine admin mode based on canvas presence
 const isAdmin = !canvas;
 
+// connection identifiers
+const clientId = Math.random().toString(36).slice(2);
+let partnerId = null;
+let partnerRole = null;
+window.clientId = clientId;
+window.partnerId = null;
+window.partnerRole = null;
+
+function updateConnectionStatus() {
+  const status = document.getElementById('connectionStatus');
+  if (status) {
+    status.textContent = partnerId
+      ? `ID ${clientId} connected to ${partnerRole} ${partnerId}`
+      : `ID ${clientId} disconnected`;
+  }
+}
+
+function announcePresence() {
+  channel.postMessage({ type: 'hello', id: clientId, role: isAdmin ? 'admin' : 'stage' });
+}
+
 if (isAdmin) {
   // Admin sends data when orbs are added or updated
   window.sendOrbsToStage = function () {
@@ -35,19 +56,39 @@ if (isAdmin) {
     }
   };
 } else {
-  // Stage listens and syncs
-  channel.onmessage = (event) => {
-    if (event.data?.type === 'sync') {
-      orbs.length = 0;
-      event.data.data.forEach(o => {
-        addOrb(o.src, o.entryType, o.role, o.label, o.ringColor, o.ringWidth, o.roleIcon);
-      });
-    }
-  };
-
   // Expose helper to request current orbs from any admin page
   window.requestOrbSync = () => channel.postMessage({ type: 'request-sync' });
 }
+
+function handleMessage(event) {
+  const msg = event.data;
+  if (!msg) return;
+  if (msg.type === 'hello') {
+    if (partnerId !== msg.id) {
+      partnerId = msg.id;
+      partnerRole = msg.role;
+      window.partnerId = partnerId;
+      window.partnerRole = partnerRole;
+      updateConnectionStatus();
+      announcePresence();
+    }
+  } else if (isAdmin && msg.type === 'request-sync') {
+    window.sendOrbsToStage();
+  } else if (!isAdmin && msg.type === 'sync') {
+    orbs.length = 0;
+    msg.data.forEach(o => {
+      addOrb(o.src, o.entryType, o.role, o.label, o.ringColor, o.ringWidth, o.roleIcon);
+    });
+  }
+  };
+  // Expose helper to request current orbs from any admin page
+  window.requestOrbSync = () => channel.postMessage({ type: 'request-sync' });
+}
+
+channel.onmessage = handleMessage;
+
+updateConnectionStatus();
+announcePresence();
 
 function updateCanvasBackground() {
   if (!canvas) return;
