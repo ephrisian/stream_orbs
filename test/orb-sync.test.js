@@ -66,17 +66,19 @@ test('stage can request sync from admin', async () => {
   stage.window.channel.close();
 });
 
-test('admin updates propagate to stage', async () => {
+test('stage still syncs when URL contains "admin"', async () => {
   const admin = createEnv('https://example.com/admin.html', false);
   runShared(admin);
+  admin.context.addOrb('weird.png');
 
-  const stage = createEnv('https://example.com/stage.html', true);
+  // stage URL contains the word 'admin' but has a canvas
+  const stage = createEnv('https://example.com/admin/stage.html', true);
   runShared(stage);
 
-  admin.context.addOrb('live.png');
+  stage.context.window.requestOrbSync();
   await wait();
   assert.equal(stage.context.window.orbs.length, 1);
-  assert.equal(stage.context.window.orbs[0].img.src, 'live.png');
+  assert.equal(stage.context.window.orbs[0].img.src, 'weird.png');
   admin.window.channel.close();
   stage.window.channel.close();
 });

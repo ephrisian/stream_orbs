@@ -10,7 +10,8 @@ window.orbs = orbs;
 const channel = new BroadcastChannel('orb-sync');
 // expose channel for tests to shut down
 window.channel = channel;
-const isAdmin = window.location.href.includes('admin');
+// determine admin mode based on canvas presence
+const isAdmin = !canvas;
 
 if (isAdmin) {
   // Admin sends data when orbs are added or updated
