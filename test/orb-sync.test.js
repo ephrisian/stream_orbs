@@ -110,7 +110,26 @@ test('admin and stage report connection IDs', async () => {
   assert.ok(stage.context.window.partnerId);
   assert.equal(admin.context.window.partnerId, stage.context.window.clientId);
   assert.equal(stage.context.window.partnerId, admin.context.window.clientId);
+
   admin.window.channel.close();
   stage.window.channel.close();
 });
 
+test('connection resets when partner leaves', async () => {
+  const admin = createEnv('https://example.com/admin.html', false);
+  runShared(admin);
+  const stage = createEnv('https://example.com/stage.html', true);
+  runShared(stage);
+
+  await wait();
+  assert.ok(admin.context.window.partnerId);
+
+  // Simulate stage leaving
+  stage.window.channel.postMessage({ type: 'bye', id: stage.context.window.clientId });
+
+  await wait();
+  assert.equal(admin.context.window.partnerId, null);
+
+  admin.window.channel.close();
+  stage.window.channel.close();
+});
