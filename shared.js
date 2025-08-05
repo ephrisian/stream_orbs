@@ -48,6 +48,13 @@ if (isAdmin) {
     }));
     channel.postMessage({ type: 'sync', data: state });
   };
+
+  // Respond to stage requests for data
+  channel.onmessage = (event) => {
+    if (event.data?.type === 'request-sync') {
+      window.sendOrbsToStage();
+    }
+  };
 } else {
   // Expose helper to request current orbs from any admin page
   window.requestOrbSync = () => channel.postMessage({ type: 'request-sync' });
@@ -73,6 +80,9 @@ function handleMessage(event) {
       addOrb(o.src, o.entryType, o.role, o.label, o.ringColor, o.ringWidth, o.roleIcon);
     });
   }
+  };
+  // Expose helper to request current orbs from any admin page
+  window.requestOrbSync = () => channel.postMessage({ type: 'request-sync' });
 }
 
 channel.onmessage = handleMessage;

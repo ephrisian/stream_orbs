@@ -113,3 +113,4 @@ test('admin and stage report connection IDs', async () => {
   admin.window.channel.close();
   stage.window.channel.close();
 });
+
