@@ -63,6 +63,7 @@
 <body>
   <div id="admin">
     <h3>🛠️ Admin Panel</h3>
+    <div id="connectionStatus">Disconnected</div>
 
     <label for="bgColorPicker">Background</label>
     <input type="color" id="bgColorPicker" value="#00ff00" />
@@ -120,6 +121,10 @@
     document.getElementById('addOrbBtn').addEventListener('click', addOrbSmart);
     document.getElementById('saveOrbsBtn').addEventListener('click', saveOrbs);
     document.getElementById('loadOrbsBtn').addEventListener('click', loadOrbs);
+    // share any existing orbs with the stage on load
+    if (typeof sendOrbsToStage === 'function') {
+      sendOrbsToStage();
+    }
   </script>
 </body>
 </html>
