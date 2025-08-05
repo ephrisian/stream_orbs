@@ -21,6 +21,12 @@ window.clientId = clientId;
 window.partnerId = null;
 window.partnerRole = null;
 
+if (window.addEventListener) {
+  window.addEventListener('beforeunload', () => {
+    channel.postMessage({ type: 'bye', id: clientId });
+  });
+}
+
 function updateConnectionStatus() {
   const status = document.getElementById('connectionStatus');
   if (status) {
@@ -48,13 +54,6 @@ if (isAdmin) {
     }));
     channel.postMessage({ type: 'sync', data: state });
   };
-
-  // Respond to stage requests for data
-  channel.onmessage = (event) => {
-    if (event.data?.type === 'request-sync') {
-      window.sendOrbsToStage();
-    }
-  };
 } else {
   // Expose helper to request current orbs from any admin page
   window.requestOrbSync = () => channel.postMessage({ type: 'request-sync' });
@@ -63,12 +62,22 @@ if (isAdmin) {
 function handleMessage(event) {
   const msg = event.data;
   if (!msg) return;
+
   if (msg.type === 'hello') {
     if (partnerId !== msg.id) {
       partnerId = msg.id;
       partnerRole = msg.role;
       window.partnerId = partnerId;
       window.partnerRole = partnerRole;
+      updateConnectionStatus();
+      announcePresence();
+    }
+  } else if (msg.type === 'bye') {
+    if (msg.id === partnerId) {
+      partnerId = null;
+      partnerRole = null;
+      window.partnerId = null;
+      window.partnerRole = null;
       updateConnectionStatus();
       announcePresence();
     }
@@ -80,9 +89,6 @@ function handleMessage(event) {
       addOrb(o.src, o.entryType, o.role, o.label, o.ringColor, o.ringWidth, o.roleIcon);
     });
   }
-  };
-  // Expose helper to request current orbs from any admin page
-  window.requestOrbSync = () => channel.postMessage({ type: 'request-sync' });
 }
 
 channel.onmessage = handleMessage;
