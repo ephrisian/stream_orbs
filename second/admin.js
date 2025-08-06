@@ -40,20 +40,26 @@ function addOrb(imgSrc, entry = "drop") {
 
   const orb = new Orb(x, y, radius, dx, dy, imgSrc);
 
-  orb.ringColor = "#ffffff"; // set custom props
+  orb.ringColor = "#ffffff";
   orb.ringWidth = 4;
   orb.role = "none";
   orb.roleIcon = "";
   orb.label = "";
   orb.entry = entry;
 
-  orb.img.onload = () => {
-    orbs.push(orb);
-    updateOrbList();
-    drawOrbs();
-  };
-}
+  // ✅ Add orb now (not inside onload)
+  orbs.push(orb);
 
+  if (orb.img.complete) {
+    drawOrbs();
+    updateOrbList();
+  } else {
+    orb.img.onload = () => {
+      drawOrbs();
+      updateOrbList();
+    };
+  }
+}
 
 
 function drawOrbs() {
@@ -242,8 +248,20 @@ window.addEventListener("DOMContentLoaded", () => {
   drawOrbs();
 
   document.getElementById("addOrbBtn")?.addEventListener("click", () => {
-    const src = prompt("Enter image URL:");
-    if (src) addOrb(src);
+    const input = document.getElementById("imageUrlInput");
+    const confirm = document.getElementById("confirmOrbBtn");
+
+    input.style.display = "inline-block";
+    confirm.style.display = "inline-block";
+    input.focus();
+
+    confirm.onclick = () => {
+      const url = input.value.trim();
+      if (url) addOrb(url);
+      input.value = "";
+      input.style.display = "none";
+      confirm.style.display = "none";
+    };
   });
 
   document.getElementById("saveOrbsBtn")?.addEventListener("click", saveOrbs);
@@ -257,8 +275,16 @@ window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("clearOrbsBtn")?.addEventListener("click", () => {
     localStorage.removeItem("orbData");
     orbs = [];
-    updateOrbList();
-    drawOrbs();
+    // Defensive cleanup of async image events
+    // (optional, depending on how Orb class works)
+    // orbs.forEach(o => o.img.onload = null);
+
+    const canvas = document.getElementById("bouncerCanvas");
+    const ctx = canvas?.getContext("2d");
+    if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    updateOrbList();  // Wipe the UI
+    drawOrbs();       // Wipe the canvas visuals again (double-confirm)
 
     const status = document.createElement('div');
     status.textContent = "🧹 Cleared all orbs";

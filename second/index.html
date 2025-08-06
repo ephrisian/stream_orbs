@@ -22,9 +22,11 @@
         <input type="file" id="fileInput" accept=".webp,.png,.jpg,.jpeg" style="display:none;">
 
         <button id="addOrbBtn">➕ Add Orb</button>
+        <input type="text" id="imageUrlInput" placeholder="Enter orb image URL" style="display:none;" />
+        <button id="confirmOrbBtn" style="display:none;">Add Orb Image</button>
         <button id="saveOrbsBtn">📀 Save Setup</button>
         <button id="loadOrbsBtn">📂 Load Setup</button>
-        <button id="clearOrbsBtn">🧹 Clear Orbs</button>
+        <button id="clearOrbsBtn" type="button">🧹 Clear Orbs</button>
 
         <div id="orbList"></div>
       </div>  
@@ -42,9 +44,9 @@
   </div>
 
   <script src="/second/shared.js"></script>
-  <script src="/second/admin.js"></script>
   <script src="/second/sound.js"></script>
   <script src="/second/enhancements.js"></script>
   <script src="/second/stage.js" defer></script>
+  <script src="/second/admin.js" defer></script>
 </body>
 </html>
