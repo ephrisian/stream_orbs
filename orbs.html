@@ -77,6 +77,11 @@
     <button onclick="addOrbSmart()">Add Orb</button>
     <button onclick="saveOrbs()">💾 Save Setup</button>
     <button onclick="loadOrbs()">📂 Load Setup</button>
+    <label>Overlay Image URL</label>
+    <input id="centerImageURL" placeholder="Paste image URL">
+    <label>Sound URL</label>
+    <input id="centerSoundURL" placeholder="Paste audio URL (mp3, wav, etc)">
+    <button onclick="updateSoundBoard()">Update Sound Board</button>
     <hr>
     <div id="orbList"></div>
   </div>
@@ -86,6 +91,71 @@
 const canvas = document.getElementById('bouncerCanvas');
 const ctx = canvas.getContext('2d');
 const orbs = [];
+let centerImageURL = '';  // Set via a new UI button
+let centerSoundURL = '';  // Set via a new UI button
+let soundPlayer = null;
+let imageVisible = false;
+let imageTimer = null;
+
+function showCenterImage() {
+  if (!centerImageURL) return;
+
+  const img = new Image();
+  img.src = centerImageURL;
+  img.onload = () => {
+    const cx = (canvas.width - img.width) / 2;
+    const cy = (canvas.height - img.height) / 2;
+
+    imageVisible = true;
+
+    // Draw the image for a few frames
+    let frameCount = 0;
+    const maxFrames = 60 * 3; // ~3 seconds at 60fps
+
+    function drawOverlay() {
+      if (!imageVisible) return;
+      ctx.drawImage(img, cx, cy);
+      frameCount++;
+      if (frameCount < maxFrames) {
+        requestAnimationFrame(drawOverlay);
+      } else {
+        imageVisible = false;
+      }
+    }
+
+    drawOverlay();
+  };
+}
+
+function updateSoundBoard() {
+  centerImageURL = document.getElementById('centerImageURL').value.trim();
+  centerSoundURL = document.getElementById('centerSoundURL').value.trim();
+  if (centerSoundURL) {
+    soundPlayer = new Audio(centerSoundURL);
+  }
+}
+
+
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.altKey && e.shiftKey && e.code === 'KeyS') {
+    e.preventDefault();
+    if (centerSoundURL) {
+      if (!soundPlayer) {
+        soundPlayer = new Audio(centerSoundURL);
+      }
+      soundPlayer.currentTime = 0;
+      if (soundPlayer) {
+        soundPlayer.pause();
+        soundPlayer.currentTime = 0;
+      }
+      soundPlayer.play();
+
+    }
+    if (centerImageURL) {
+      showCenterImage();
+    }
+  }
+});
 
 function updateCanvasBackground() {
   canvas.style.backgroundColor = document.getElementById('bgColorPicker').value;
