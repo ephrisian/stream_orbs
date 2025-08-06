@@ -3,6 +3,7 @@
 const soundTriggers = [];
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 const activeGIFs = [];
+const defaultGIFPosition = 'bottom-left';
 
 function showSoundStatus(message, isError = false) {
   const status = document.createElement('div');
@@ -160,60 +161,74 @@ function saveTriggers() {
 }
 
 function createVolumeSlider(trigger) {
-  const slider = document.createElement('input');
-  slider.type = 'range';
-  slider.min = 0;
-  slider.max = 1;
-  slider.step = 0.01;
-  slider.value = trigger.volume ?? 1;
-  slider.title = 'Volume';
-  slider.oninput = () => {
-    trigger.volume = parseFloat(slider.value);
+  const volume = document.createElement('input');
+  volume.type = 'range';
+  volume.min = 0;
+  volume.max = 1;
+  volume.step = 0.01;
+  volume.value = trigger.volume ?? 1;
+  volume.oninput = () => {
+    trigger.volume = parseFloat(volume.value);
     saveTriggers();
   };
-  return slider;
+  return volume;
 }
 
 function createGifPositionSelector(trigger) {
   const select = document.createElement('select');
-  const options = ['bottom-left', 'bottom-right', 'top-left', 'top-right', 'center'];
-  options.forEach(pos => {
+  ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'].forEach(pos => {
     const opt = document.createElement('option');
     opt.value = pos;
     opt.textContent = pos;
-    if (trigger.gifPosition === pos) opt.selected = true;
+    if ((trigger.gifPosition || defaultGIFPosition) === pos) opt.selected = true;
     select.appendChild(opt);
   });
+
   select.onchange = () => {
     trigger.gifPosition = select.value;
     saveTriggers();
   };
+
   return select;
 }
 
 function applyGifPosition(img, position) {
-  if (activeGIFs.length > 0) {
-    showSoundStatus("⏳ GIF already active", true);
-    return;
-  }
-  img.style.bottom = '';
-  img.style.top = '';
-  img.style.left = '';
-  img.style.right = '';
-  img.style.transform = '';
+  const pos = position || defaultGIFPosition;
   img.style.position = 'absolute';
-  img.classList.add('bounce');
-  switch (position) {
-    case 'bottom-left': img.style.bottom = '10px'; img.style.left = '10px'; break;
-    case 'bottom-right': img.style.bottom = '10px'; img.style.right = '10px'; break;
-    case 'top-left': img.style.top = '10px'; img.style.left = '10px'; break;
-    case 'top-right': img.style.top = '10px'; img.style.right = '10px'; break;
+  img.style.zIndex = 1000;
+  img.style.maxHeight = '200px';
+  img.style.pointerEvents = 'none';
+
+  switch (pos) {
+    case 'top-left':
+      img.style.top = '10px';
+      img.style.left = '10px';
+      break;
+    case 'top-right':
+      img.style.top = '10px';
+      img.style.right = '10px';
+      break;
+    case 'bottom-right':
+      img.style.bottom = '10px';
+      img.style.right = '10px';
+      break;
     case 'center':
       img.style.top = '50%';
       img.style.left = '50%';
       img.style.transform = 'translate(-50%, -50%)';
       break;
+    default:
+      img.style.bottom = '10px';
+      img.style.left = '10px';
   }
+}
+
+function checkForHotkeyClash(combo, currentTrigger) {
+  return soundTriggers.some(t => t !== currentTrigger && t.keyCombo === combo);
+}
+
+function showClashWarning() {
+  showSoundStatus("⚠️ That key combo is already in use.", true);
 }
 
 function updateSoundPanel() {

@@ -6,47 +6,35 @@
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <div id="container">
-    <div id="leftPanel">
+  <div id="container" style="display: grid; grid-template-columns: 1fr 405px; gap: 32px; min-height: 100vh; width: 100vw;">
+    <div id="adminColumn" style="display: flex; flex-direction: column; gap: 32px; width: 100%;">
+      <div id="soundboard">
+        <h3>🎧 Soundboard</h3>
+        <button id="addSoundBtn">➕ Add Sound Trigger</button>
+        <div id="soundList"></div>
+      </div>
       <div id="orbAdmin">
         <h3>✨ Orb Admin</h3>
-        <label for="bgColorPicker">Background</label>
-        <input type="color" id="bgColorPicker" value="#00ff00">
-
-        <label for="aspectRatio">Aspect Ratio</label>
-        <select id="aspectRatio">
-          <option value="16:9">16:9</option>
-          <option value="9:16">9:16</option>
-        </select>
-
-        <input type="file" id="fileInput" accept=".webp,.png,.jpg,.jpeg" style="display:none;">
-
-        <button id="addOrbBtn">➕ Add Orb</button>
-        <input type="text" id="imageUrlInput" placeholder="Enter orb image URL" style="display:none;" />
-        <button id="confirmOrbBtn" style="display:none;">Add Orb Image</button>
-        <button id="saveOrbsBtn">📀 Save Setup</button>
-        <button id="loadOrbsBtn">📂 Load Setup</button>
-        <button id="clearOrbsBtn" type="button">🧹 Clear Orbs</button>
-
-        <div id="orbList"></div>
-      </div>  
+        <form id="orbForm" onsubmit="return false;" style="display: flex; flex-direction: row; gap: 16px; align-items: center; margin-bottom: 16px; width: 100%;">
+          <label for="bgColorPicker" style="margin:0;">BG Color</label>
+          <input type="color" id="bgColorPicker" value="#00ff00">
+          <button id="saveOrbsBtn" type="button">📀 Save</button>
+          <button id="loadOrbsBtn" type="button">📂 Load</button>
+          <button id="clearOrbsBtn" type="button">🧹 Clear</button>
+          <button id="addOrbBtn" type="button">➕ Add Orb</button>
+        </form>
+        <div id="orbList" class="orb-grid" style="margin-top:16px; width: 100%;"></div>
+      </div>
     </div>
-
-    <div id="stage" style="position: relative;">
-      <canvas id="bouncerCanvas" width="405" height="720"></canvas>
-    </div>
-
-    <div id="soundboard">
-      <h3>🎧 Soundboard</h3>
-      <button id="addSoundBtn">➕ Add Sound Trigger</button>
-      <div id="soundList"></div>
+    <div id="canvasHolder" style="display: flex; justify-content: center; align-items: flex-start; width: 405px;">
+      <div id="canvasBox" style="background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; display: flex; justify-content: center; align-items: center; width: 405px; height: 720px; box-sizing: border-box;">
+        <canvas id="bouncerCanvas" width="405" height="720"></canvas>
+      </div>
     </div>
   </div>
 
-  <script src="/second/shared.js"></script>
-  <script src="/second/sound.js"></script>
-  <script src="/second/enhancements.js"></script>
-  <script src="/second/stage.js" defer></script>
-  <script src="/second/admin.js" defer></script>
+  <script src="/second/orb.js" defer></script>
+  <script src="/second/sound.js" defer></script>
+  <script src="/second/enhancements.js" defer></script>
 </body>
 </html>

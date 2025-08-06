@@ -2,16 +2,25 @@
 html, body {
   margin: 0;
   padding: 0;
-  background: transparent;
-  font-family: sans-serif;
-  color: white;
+  background: #f5f6fa;
+  font-family: 'Roboto', Arial, sans-serif;
+  color: #222;
+  height: 100%;
+  font-size: 16px;
+}
+body {
+  min-height: 100vh;
+  height: auto;
+  overflow-y: auto;
 }
 
 /* Main layout container */
 #container {
-  display: flex;
-  height: 100vh;
-  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 405px;
+  gap: 32px;
+  min-height: 100vh;
+  width: 100vw;
 }
 
 /* --- Canvas Panel --- */
@@ -25,44 +34,90 @@ canvas {
 
 /* --- Left Side Panel (Orb Admin) --- */
 #leftPanel {
+  flex: 1;
+  padding: 32px 24px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  width: 300px;
-  flex-shrink: 0;
+  align-items: flex-end;
+}
+
+/* --- Right Side Panel (Soundboard) --- */
+#rightPanel {
+  flex: 1;
+  padding: 32px 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  align-items: stretch;
 }
 
 /* --- Orb Admin --- */
 #orbAdmin {
-  background: rgba(0, 0, 0, 0.85);
-  padding: 10px;
-  overflow-y: auto;
-  height: 100vh;
-  box-shadow: 0 0 10px rgba(0,0,0,0.4);
-  border-right: 2px solid #555;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  padding: 24px;
+  margin-bottom: 0;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  height: auto;
+  min-height: 0;
+  max-height: none;
 }
 
 /* --- Soundboard Panel --- */
 #soundboard {
-  min-width: 500px;
-  max-width: 700px;
-  flex-grow: 1;
-  background: rgba(0, 0, 0, 0.85);
-  padding: 10px;
-  overflow-y: auto;
-  height: 100vh;
-  box-shadow: 0 0 10px rgba(0,0,0,0.4);
-  border-left: 2px solid #555;
-  flex-shrink: 0;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  padding: 24px;
+  margin-bottom: 0;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* --- Admin Column (New) --- */
+#adminColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 100%;
+}
+
+/* --- Canvas Holder (New) --- */
+#canvasHolder {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: 405px;
+  min-width: 405px;
+  max-width: 405px;
+  height: auto;
+}
+
+/* --- Bouncer Canvas (New) --- */
+#bouncerCanvas {
+  width: 405px !important;
+  height: 720px !important;
+  display: block;
+  margin: 0 auto;
 }
 
 /* --- Headers --- */
 #orbAdmin h3,
 #soundboard h3 {
-  margin-top: 0;
-  font-size: 18px;
-  margin-bottom: 10px;
-  border-bottom: 1px solid #444;
-  padding-bottom: 5px;
+  font-size: 1.15rem;
+  font-weight: 500;
+  margin-bottom: 18px;
+  letter-spacing: 0.02em;
 }
 
 /* --- Form Controls --- */
@@ -86,23 +141,40 @@ canvas {
 #orbAdmin select,
 #soundboard input,
 #soundboard select {
-  background-color: #222;
-  color: white;
-  border: 1px solid #444;
+  border: 1px solid #cfd8dc;
+  border-radius: 4px;
+  background: #fff;
 }
 
 /* --- Buttons --- */
 #orbAdmin button,
 #soundboard button {
-  background-color: #333;
-  color: white;
   border: none;
+  border-radius: 6px;
   cursor: pointer;
+  padding: 8px 18px;
+  font-size: 1rem;
+  transition: background 0.2s;
 }
 
-#orbAdmin button:hover,
+#orbAdmin button {
+  background: #1976d2;
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(25, 118, 210, 0.08);
+}
+
+#orbAdmin button:hover {
+  background: #1565c0;
+}
+
+#soundboard button {
+  background: #43a047;
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(67, 160, 71, 0.08);
+}
+
 #soundboard button:hover {
-  background-color: #555;
+  background: #388e3c;
 }
 
 /* --- Orb List Styling --- */
@@ -126,6 +198,7 @@ canvas {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 6px;
   animation: fadeIn 0.3s ease;
+  width: 100%;
 }
 
 #soundList > div:hover {
@@ -141,6 +214,51 @@ canvas {
   background: transparent;
   border: none;
   margin-bottom: 5px;
+}
+
+/* --- Orb Grid and Rows --- */
+.orb-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  width: 100%;
+}
+.orb-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr 48px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fafbfc;
+  border-radius: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.orb-header {
+  font-weight: 600;
+  background: #e3eafc;
+  border-bottom: 2px solid #bbdefb;
+  border-radius: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.orb-row button {
+  justify-self: end;
+  min-width: 40px;
+  max-width: 48px;
+  padding: 6px 10px;
+  font-size: 1rem;
+  background: #e53935;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.orb-row button:hover {
+  background: #b71c1c;
 }
 
 /* --- Animations --- */
@@ -173,4 +291,26 @@ canvas {
 #stage {
   position: relative;
   overflow: hidden;
+  width: 405px;
+  min-width: 405px;
+  max-width: 405px;
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  #container {
+    grid-template-columns: 1fr;
+  }
+  #canvasHolder, #canvasBox {
+    width: 100vw !important;
+    min-width: 0 !important;
+    max-width: 100vw !important;
+  }
+  #bouncerCanvas {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: auto !important;
+    max-height: 80vh !important;
+  }
 }
