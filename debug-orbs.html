@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Orbs</title>
+</head>
+<body>
+    <h1>Orb Debug Tool</h1>
+    <button onclick="addTestOrb()">Add Test Orb to localStorage</button>
+    <button onclick="showOrbs()">Show Current Orbs</button>
+    <button onclick="clearOrbs()">Clear All Orbs</button>
+    <div id="output"></div>
+
+    <script>
+        function addTestOrb() {
+            const testOrb = {
+                imgSrc: 'https://via.placeholder.com/64/ff0000/ffffff?text=TEST',
+                entryType: 'drop',
+                role: 'none',
+                label: 'Test Orb',
+                ringColor: '#ffffff',
+                ringWidth: 4,
+                roleIcon: '🧪',
+                size: 64
+            };
+            
+            localStorage.setItem('orbData', JSON.stringify([testOrb]));
+            document.getElementById('output').innerHTML = 'Test orb added to localStorage!';
+            
+            // Trigger storage event
+            window.dispatchEvent(new StorageEvent('storage', {
+                key: 'orbData',
+                newValue: JSON.stringify([testOrb]),
+                storageArea: localStorage
+            }));
+        }
+
+        function showOrbs() {
+            const data = localStorage.getItem('orbData');
+            if (data) {
+                const orbs = JSON.parse(data);
+                document.getElementById('output').innerHTML = `Current orbs: ${JSON.stringify(orbs, null, 2)}`;
+            } else {
+                document.getElementById('output').innerHTML = 'No orbs in localStorage';
+            }
+        }
+
+        function clearOrbs() {
+            localStorage.removeItem('orbData');
+            document.getElementById('output').innerHTML = 'Orbs cleared from localStorage';
+        }
+    </script>
+</body>
+</html>

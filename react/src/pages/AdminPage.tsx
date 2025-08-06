@@ -1,31 +1,100 @@
-import React, { useState } from 'react';
-import { Box, Grid } from '@mui/material';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Box, Stack } from '@mui/material';
 import { Canvas } from '../components/Canvas';
 import Soundboard from '../components/Soundboard';
-import OrbAdmin from '../components/OrbAdmin';
+import OrbAdminClean from '../components/OrbAdminClean';
+import { useOrbManager } from '../hooks/useOrbManager';
+import { useSoundManager } from '../hooks/useSoundManager';
 
 export const AdminPage: React.FC = () => {
-  const [orbs, setOrbs] = useState<any[]>([]); // TODO: Replace with real orb state logic
+  const [backgroundColor, setBackgroundColor] = useState('#00ff00');
+  
+  const {
+    orbs,
+    addOrb,
+    removeOrb,
+    updateOrb,
+    clearAllOrbs,
+    startAnimation
+  } = useOrbManager();
+
+  console.log('Admin Page - Current orbs count:', orbs.length);
+  console.log('Admin Page - Orbs array:', orbs);
+
+  const {
+    soundTriggers,
+    addSoundTrigger,
+    removeSoundTrigger,
+    updateSoundTrigger,
+    playSoundAndGif,
+    stopAllSounds
+  } = useSoundManager();
+
+  const handleCanvasReady = useCallback((canvas: HTMLCanvasElement) => {
+    startAnimation(canvas);
+  }, [startAnimation]);
+
+  const handleBackgroundColorChange = useCallback((color: string) => {
+    setBackgroundColor(color);
+    localStorage.setItem('backgroundColor', color);
+  }, []);
+
+  // Load saved background color on mount
+  useEffect(() => {
+    const savedBgColor = localStorage.getItem('backgroundColor');
+    if (savedBgColor) {
+      setBackgroundColor(savedBgColor);
+    }
+  }, []);
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Grid container spacing={4} alignItems="flex-start">
+    <Box sx={{ p: 4, backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={4} alignItems="flex-start">
         {/* Left: Canvas */}
-        <Grid item xs={12} md={5}>
-          <Box sx={{ background: '#fff', borderRadius: 2, boxShadow: 2, p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 720 }}>
-            <Canvas orbs={orbs} />
-          </Box>
-        </Grid>
+        <Box sx={{ 
+          background: '#ffffff', 
+          borderRadius: 2, 
+          boxShadow: 2, 
+          p: 2, 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: 720,
+          width: { xs: '100%', md: '405px' },
+          flexShrink: 0
+        }}>
+          <Canvas 
+            onAnimationStart={handleCanvasReady}
+            backgroundColor={backgroundColor}
+            showBorder={true}
+          />
+        </Box>
+        
         {/* Right: Soundboard (top), Orb Admin (bottom) */}
-        <Grid item xs={12} md={7}>
+        <Box sx={{ flex: 1, width: '100%' }}>
           <Box sx={{ mb: 4 }}>
-            <Soundboard />
+            <Soundboard 
+              soundTriggers={soundTriggers}
+              onAddSoundTrigger={addSoundTrigger}
+              onRemoveSoundTrigger={removeSoundTrigger}
+              onUpdateSoundTrigger={updateSoundTrigger}
+              onPlaySoundAndGif={playSoundAndGif}
+              onStopAllSounds={stopAllSounds}
+            />
           </Box>
           <Box>
-            <OrbAdmin orbs={orbs} setOrbs={setOrbs} />
+            <OrbAdminClean 
+              orbs={orbs}
+              onAddOrb={addOrb}
+              onUpdateOrb={updateOrb}
+              onRemoveOrb={removeOrb}
+              onClearAllOrbs={clearAllOrbs}
+              backgroundColor={backgroundColor}
+              onBackgroundColorChange={handleBackgroundColorChange}
+            />
           </Box>
-        </Grid>
-      </Grid>
+        </Box>
+      </Stack>
     </Box>
   );
 };

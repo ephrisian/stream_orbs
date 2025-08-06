@@ -2,7 +2,8 @@ import React, { useRef, useEffect } from 'react';
 import Box from '@mui/material/Box';
 
 interface CanvasProps {
-  orbs: any[];
+  onAnimationStart?: (canvas: HTMLCanvasElement) => void;
+  backgroundColor?: string;
   width?: number;
   height?: number;
   showBorder?: boolean;
@@ -11,39 +12,55 @@ interface CanvasProps {
 const CANVAS_WIDTH = 405;
 const CANVAS_HEIGHT = 720;
 
-export const Canvas: React.FC<CanvasProps> = ({ orbs, width = CANVAS_WIDTH, height = CANVAS_HEIGHT, showBorder = false }) => {
+export const Canvas: React.FC<CanvasProps> = ({ 
+  onAnimationStart, 
+  backgroundColor = '#00ff00',
+  width = CANVAS_WIDTH, 
+  height = CANVAS_HEIGHT, 
+  showBorder = false 
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.clearRect(0, 0, width, height);
-    for (const orb of orbs) {
-      // Draw orb (placeholder, real logic will be ported)
-      ctx.beginPath();
-      ctx.arc(orb.x, orb.y, orb.size || 32, 0, Math.PI * 2);
-      ctx.fillStyle = orb.ringColor || '#1976d2';
-      ctx.fill();
-      ctx.closePath();
+    
+    // Set canvas background color
+    canvas.style.backgroundColor = backgroundColor;
+    
+    // Start animation if callback provided
+    if (onAnimationStart) {
+      onAnimationStart(canvas);
     }
-  }, [orbs, width, height]);
+  }, [onAnimationStart, backgroundColor]);
 
   return (
     <Box
       sx={{
         width,
         height,
-        background: '#f5f6fa',
-        borderRadius: 2,
+        background: showBorder ? '#fff' : 'transparent',
+        borderRadius: showBorder ? 2 : 0,
         boxShadow: showBorder ? 2 : 0,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        padding: showBorder ? 3 : 0,
+        margin: 0
       }}
     >
-      <canvas ref={canvasRef} width={width} height={height} style={{ display: 'block', background: '#fff', borderRadius: 8 }} />
+      <canvas 
+        ref={canvasRef} 
+        width={width} 
+        height={height} 
+        style={{ 
+          display: 'block', 
+          borderRadius: showBorder ? 8 : 0,
+          backgroundColor: backgroundColor,
+          margin: 0,
+          padding: 0
+        }} 
+      />
     </Box>
   );
 };

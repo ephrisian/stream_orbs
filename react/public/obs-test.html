@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OBS Test - Simple Canvas</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 405px;
+            height: 720px;
+            overflow: hidden;
+            background: transparent;
+        }
+        canvas {
+            display: block;
+            margin: 0;
+            padding: 0;
+            background: #00ff00;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="testCanvas" width="405" height="720"></canvas>
+    
+    <script>
+        console.log('OBS Test: Starting simple canvas test');
+        
+        const canvas = document.getElementById('testCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Test basic canvas rendering
+        let x = 50;
+        let dx = 2;
+        
+        function drawTestOrb() {
+            // Clear canvas
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(0, 0, 405, 720);
+            
+            // Draw a simple red circle
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(x, 600, 30, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw text
+            ctx.fillStyle = '#000000';
+            ctx.font = '20px Arial';
+            ctx.fillText('OBS Test Orb', x - 50, 550);
+            
+            // Update position
+            x += dx;
+            if (x > 375 || x < 30) dx = -dx;
+            
+            console.log('Drawing test orb at x:', x);
+        }
+        
+        // Test different animation methods
+        console.log('OBS Test: Testing requestAnimationFrame');
+        function animateRAF() {
+            drawTestOrb();
+            requestAnimationFrame(animateRAF);
+        }
+        
+        console.log('OBS Test: Testing setInterval');
+        function animateInterval() {
+            drawTestOrb();
+        }
+        
+        // Try both methods
+        // animateRAF(); // Comment out if problematic
+        setInterval(animateInterval, 16); // ~60fps fallback
+        
+        // Test localStorage
+        console.log('OBS Test: localStorage test');
+        try {
+            localStorage.setItem('obsTest', 'working');
+            console.log('localStorage works:', localStorage.getItem('obsTest'));
+        } catch (e) {
+            console.error('localStorage failed:', e);
+        }
+        
+        // Test image loading
+        console.log('OBS Test: Testing image loading');
+        const testImg = new Image();
+        testImg.onload = () => {
+            console.log('Image loaded successfully');
+            // Draw the image
+            ctx.drawImage(testImg, 200, 300, 64, 64);
+        };
+        testImg.onerror = () => {
+            console.error('Image failed to load');
+        };
+        testImg.src = 'https://via.placeholder.com/64/0000ff/ffffff?text=IMG';
+        
+        console.log('OBS Test: Setup complete');
+    </script>
+</body>
+</html>

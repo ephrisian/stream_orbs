@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Orbs LocalStorage</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { margin: 5px; padding: 10px; }
+        pre { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Orb Debug Tool</h1>
+    
+    <button onclick="addTestOrb()">Add Test Orb to localStorage</button>
+    <button onclick="showLocalStorage()">Show localStorage</button>
+    <button onclick="clearLocalStorage()">Clear localStorage</button>
+    <button onclick="openAdmin()">Open Admin</button>
+    <button onclick="openObs()">Open OBS</button>
+    
+    <div id="output"></div>
+    <pre id="localStorage"></pre>
+
+    <script>
+        function addTestOrb() {
+            const testOrb = {
+                imgSrc: 'https://via.placeholder.com/64/ff0000/ffffff?text=TEST',
+                entryType: 'drop',
+                role: 'none',
+                label: 'Debug Test Orb',
+                ringColor: '#ffffff',
+                ringWidth: 4,
+                roleIcon: '🔧',
+                size: 64
+            };
+            
+            localStorage.setItem('orbData', JSON.stringify([testOrb]));
+            document.getElementById('output').innerHTML = '<p style="color: green;">✅ Test orb added to localStorage!</p>';
+            showLocalStorage();
+            
+            // Trigger storage event manually
+            window.dispatchEvent(new StorageEvent('storage', {
+                key: 'orbData',
+                newValue: JSON.stringify([testOrb]),
+                storageArea: localStorage
+            }));
+        }
+
+        function showLocalStorage() {
+            const orbData = localStorage.getItem('orbData');
+            const bgColor = localStorage.getItem('backgroundColor');
+            
+            let output = '<h3>Current localStorage:</h3>';
+            output += '<strong>orbData:</strong><br>';
+            if (orbData) {
+                try {
+                    const orbs = JSON.parse(orbData);
+                    output += JSON.stringify(orbs, null, 2);
+                } catch (e) {
+                    output += 'ERROR: ' + e.message;
+                }
+            } else {
+                output += 'null (no orbs saved)';
+            }
+            
+            output += '<br><br><strong>backgroundColor:</strong> ' + (bgColor || 'null');
+            
+            document.getElementById('localStorage').innerHTML = output;
+        }
+
+        function clearLocalStorage() {
+            localStorage.removeItem('orbData');
+            localStorage.removeItem('backgroundColor');
+            document.getElementById('output').innerHTML = '<p style="color: red;">🗑️ localStorage cleared!</p>';
+            showLocalStorage();
+        }
+
+        function openAdmin() {
+            window.open('/admin', '_blank');
+        }
+
+        function openObs() {
+            window.open('/obs', '_blank');
+        }
+
+        // Show localStorage on page load
+        showLocalStorage();
+        
+        // Listen for storage changes
+        window.addEventListener('storage', function(e) {
+            console.log('Storage event detected:', e);
+            showLocalStorage();
+        });
+    </script>
+</body>
+</html>

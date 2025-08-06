@@ -5,6 +5,41 @@
   text-align: center;
 }
 
+/* OBS-specific styles for zero padding - high specificity */
+body.obs-page #root {
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+  width: 405px !important;
+  height: 720px !important;
+}
+
+body.obs-page {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 405px !important;
+  height: 720px !important;
+  overflow: hidden !important;
+}
+
+html.obs-page {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 405px !important;
+  height: 720px !important;
+  overflow: hidden !important;
+}
+
+.obs-page {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.obs-page * {
+  box-sizing: border-box !important;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
