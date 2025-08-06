@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stage Display</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      overflow: hidden;
+    }
+    #stage {
+      position: relative;
+      width: 405px;
+      height: 720px;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    img {
+      position: absolute;
+      max-height: 200px;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .bounce {
+      animation: popBounce 0.5s ease;
+    }
+    @keyframes popBounce {
+      0% { transform: scale(0.8); opacity: 0; }
+      60% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <canvas id="bouncerCanvas" width="405" height="720"></canvas>
+  </div>
+
+  <script src="/second/stage.js"></script>
+</body>
+</html>

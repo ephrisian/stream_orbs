@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Orb Control Panel</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div id="container">
+    <div id="leftPanel">
+      <div id="orbAdmin">
+        <h3>✨ Orb Admin</h3>
+        <label for="bgColorPicker">Background</label>
+        <input type="color" id="bgColorPicker" value="#00ff00">
+
+        <label for="aspectRatio">Aspect Ratio</label>
+        <select id="aspectRatio">
+          <option value="16:9">16:9</option>
+          <option value="9:16">9:16</option>
+        </select>
+
+        <input type="file" id="fileInput" accept=".webp,.png,.jpg,.jpeg" style="display:none;">
+
+        <button id="addOrbBtn">➕ Add Orb</button>
+        <button id="saveOrbsBtn">📀 Save Setup</button>
+        <button id="loadOrbsBtn">📂 Load Setup</button>
+        <button id="clearOrbsBtn">🧹 Clear Orbs</button>
+
+        <div id="orbList"></div>
+      </div>  
+    </div>
+
+    <div id="stage" style="position: relative;">
+      <canvas id="bouncerCanvas" width="405" height="720"></canvas>
+    </div>
+
+    <div id="soundboard">
+      <h3>🎧 Soundboard</h3>
+      <button id="addSoundBtn">➕ Add Sound Trigger</button>
+      <div id="soundList"></div>
+    </div>
+  </div>
+
+  <script src="/second/shared.js"></script>
+  <script src="/second/admin.js"></script>
+  <script src="/second/sound.js"></script>
+  <script src="/second/enhancements.js"></script>
+  <script src="/second/stage.js" defer></script>
+</body>
+</html>

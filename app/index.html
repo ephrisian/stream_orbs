@@ -1,0 +1,73 @@
+// FILE: index.html (finalized markup with Stop All button)
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Orb Control Panel</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    #container {
+      display: flex;
+      flex-direction: row;
+      height: 100vh;
+    }
+    #leftPanel, #soundboard {
+      width: 20%;
+      padding: 1rem;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+    #stage {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    canvas {
+      max-width: 100%;
+      max-height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <!-- Orb Admin -->
+    <div id="leftPanel">
+      <h3>✨ Orb Admin</h3>
+      <label for="bgColorPicker">Background</label>
+      <input type="color" id="bgColorPicker" value="#00ff00">
+
+      <label for="aspectRatio">Aspect Ratio</label>
+      <select id="aspectRatio">
+        <option value="16:9">16:9</option>
+        <option value="9:16">9:16</option>
+      </select>
+
+      <input type="file" id="fileInput" accept=".webp,.png,.jpg,.jpeg" style="display:none;">
+
+      <button id="addOrbBtn">➕ Add Orb</button>
+      <button id="saveOrbsBtn">📀 Save Setup</button>
+      <button id="loadOrbsBtn">📂 Load Setup</button>
+
+      <div id="orbList"></div>
+    </div>
+
+    <!-- Canvas Preview -->
+    <div id="stage">
+      <canvas id="bouncerCanvas" width="405" height="720"></canvas>
+    </div>
+
+    <!-- Soundboard -->
+    <div id="soundboard">
+      <h3>🎧 Soundboard</h3>
+      <button id="addSoundBtn">➕ Add Sound Trigger</button>
+      <button id="stopAllBtn">⛔ Stop All</button>
+      <div id="soundList"></div>
+    </div>
+  </div>
+
+  <script type="module" src="./admin.js"></script>
+</body>
+</html>
