@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import type { SavedOrb } from '../types/orb';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://192.168.68.68:3001/api';
 
 export interface ApiOrbData extends SavedOrb {
   id: string;
@@ -174,10 +174,10 @@ export const useOrbApi = () => {
     }
   }, []);
 
-  // Auto-fetch orbs on mount
-  useEffect(() => {
-    fetchOrbs().catch(console.error);
-  }, [fetchOrbs]);
+  // Auto-fetch disabled - orbs are loaded manually when needed
+  // useEffect(() => {
+  //   fetchOrbs().catch(console.error);
+  // }, [fetchOrbs]);
 
   return {
     orbs,

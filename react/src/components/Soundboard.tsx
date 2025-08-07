@@ -44,20 +44,14 @@ const Soundboard: React.FC<SoundboardProps> = ({
 }) => {
   const [listeningForKeyCombo, setListeningForKeyCombo] = useState<string | null>(null);
 
-  const handleFileUpload = useCallback((triggerId: string, file: File, type: 'audio' | 'gif') => {
-    const objectUrl = URL.createObjectURL(file);
-    
+  const handleFileUpload = useCallback(async (triggerId: string, file: File, type: 'audio' | 'gif') => {
     if (type === 'audio') {
       onUpdateSoundTrigger(triggerId, {
-        soundUrl: file.name,
-        _file: file,
-        _objectUrl: objectUrl
+        _file: file
       });
     } else {
       onUpdateSoundTrigger(triggerId, {
-        gifUrl: file.name,
-        _gifFile: file,
-        _gifObjectUrl: objectUrl
+        _gifFile: file
       });
     }
   }, [onUpdateSoundTrigger]);

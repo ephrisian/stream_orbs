@@ -42,25 +42,32 @@ export const Canvas: React.FC<CanvasProps> = ({
         background: showBorder ? '#fff' : 'transparent',
         borderRadius: showBorder ? 2 : 0,
         boxShadow: showBorder ? 2 : 0,
+        p: showBorder ? 2 : 0,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: showBorder ? 3 : 0,
-        margin: 0
+        position: 'relative'
       }}
     >
-      <canvas 
-        ref={canvasRef} 
-        width={width} 
-        height={height} 
-        style={{ 
-          display: 'block', 
-          borderRadius: showBorder ? 8 : 0,
-          backgroundColor: backgroundColor,
-          margin: 0,
-          padding: 0
-        }} 
-      />
+      <div
+        style={{
+          position: 'relative',
+          width,
+          height
+        }}
+      >
+        <canvas
+          ref={canvasRef}
+          width={width}
+          height={height}
+          style={{
+            display: 'block',
+            backgroundColor,
+            border: showBorder ? '1px solid #ddd' : 'none',
+            borderRadius: showBorder ? '4px' : '0'
+          }}
+        />
+      </div>
     </Box>
   );
 };

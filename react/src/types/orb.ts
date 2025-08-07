@@ -15,6 +15,7 @@ export interface Orb {
   ringColor: string;
   ringWidth: number;
   roleIcon: string;
+  roleIconPosition: 'top' | 'bottom' | 'left' | 'right' | 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   moveTimer: number;
   moveState: 'idle' | 'walk' | 'dash';
   size: number;
@@ -22,6 +23,14 @@ export interface Orb {
   targetSize: number;
   imgLoaded: boolean;
   imgSrc: string;
+  // Physics properties
+  velocityX: number;
+  velocityY: number;
+  onGround: boolean;
+  exploding: boolean;
+  explosionForce: number;
+  explosionAngle: number;
+  mass: number; // For realistic physics
 }
 
 export interface OrbConfig {
@@ -32,6 +41,7 @@ export interface OrbConfig {
   ringColor?: string;
   ringWidth?: number;
   roleIcon?: string;
+  roleIconPosition?: 'top' | 'bottom' | 'left' | 'right' | 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   size?: number;
 }
 
@@ -43,5 +53,6 @@ export interface SavedOrb {
   ringColor: string;
   ringWidth: number;
   roleIcon: string;
+  roleIconPosition: 'top' | 'bottom' | 'left' | 'right' | 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   size: number;
 }

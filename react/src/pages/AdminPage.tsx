@@ -7,7 +7,7 @@ import { useOrbManager } from '../hooks/useOrbManager';
 import { useSoundManager } from '../hooks/useSoundManager';
 
 export const AdminPage: React.FC = () => {
-  const [backgroundColor, setBackgroundColor] = useState('#00ff00');
+  const [showPreview, setShowPreview] = useState(false); // Start with preview hidden
   
   const {
     orbs,
@@ -23,6 +23,8 @@ export const AdminPage: React.FC = () => {
 
   const {
     soundTriggers,
+    loading,
+    error,
     addSoundTrigger,
     removeSoundTrigger,
     updateSoundTrigger,
@@ -34,41 +36,44 @@ export const AdminPage: React.FC = () => {
     startAnimation(canvas);
   }, [startAnimation]);
 
-  const handleBackgroundColorChange = useCallback((color: string) => {
-    setBackgroundColor(color);
-    localStorage.setItem('backgroundColor', color);
-  }, []);
+  const handleTogglePreview = useCallback(() => {
+    const newShowPreview = !showPreview;
+    setShowPreview(newShowPreview);
+    localStorage.setItem('showPreview', JSON.stringify(newShowPreview));
+  }, [showPreview]);
 
-  // Load saved background color on mount
+  // Load saved preview state on mount
   useEffect(() => {
-    const savedBgColor = localStorage.getItem('backgroundColor');
-    if (savedBgColor) {
-      setBackgroundColor(savedBgColor);
+    const savedShowPreview = localStorage.getItem('showPreview');
+    if (savedShowPreview !== null) {
+      setShowPreview(JSON.parse(savedShowPreview));
     }
   }, []);
 
   return (
     <Box sx={{ p: 4, backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={4} alignItems="flex-start">
-        {/* Left: Canvas */}
-        <Box sx={{ 
-          background: '#ffffff', 
-          borderRadius: 2, 
-          boxShadow: 2, 
-          p: 2, 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          minHeight: 720,
-          width: { xs: '100%', md: '405px' },
-          flexShrink: 0
-        }}>
-          <Canvas 
-            onAnimationStart={handleCanvasReady}
-            backgroundColor={backgroundColor}
-            showBorder={true}
-          />
-        </Box>
+        {/* Left: Canvas (conditionally rendered) */}
+        {showPreview && (
+          <Box sx={{ 
+            background: '#ffffff', 
+            borderRadius: 2, 
+            boxShadow: 2, 
+            p: 2, 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            minHeight: 720,
+            width: { xs: '100%', md: '405px' },
+            flexShrink: 0
+          }}>
+            <Canvas 
+              onAnimationStart={handleCanvasReady}
+              backgroundColor="#00ff00"
+              showBorder={true}
+            />
+          </Box>
+        )}
         
         {/* Right: Soundboard (top), Orb Admin (bottom) */}
         <Box sx={{ flex: 1, width: '100%' }}>
@@ -89,8 +94,8 @@ export const AdminPage: React.FC = () => {
               onUpdateOrb={updateOrb}
               onRemoveOrb={removeOrb}
               onClearAllOrbs={clearAllOrbs}
-              backgroundColor={backgroundColor}
-              onBackgroundColorChange={handleBackgroundColorChange}
+              showPreview={showPreview}
+              onTogglePreview={handleTogglePreview}
             />
           </Box>
         </Box>

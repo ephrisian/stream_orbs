@@ -1,10 +1,19 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import type { SoundTrigger, KeyCombo, SavedSoundTrigger } from '../types/sound';
+import type { SoundTrigger, KeyCombo } from '../types/sound';
+import { useSoundboardApi } from './useSoundboardApi';
 
 export const useSoundManager = () => {
   const [soundTriggers, setSoundTriggers] = useState<SoundTrigger[]>([]);
   const playingAudioMapRef = useRef<Map<string, HTMLAudioElement>>(new Map());
-  const activeGIFsRef = useRef<HTMLImageElement[]>([]);
+  
+  const {
+    loading,
+    error,
+    getSoundTriggers,
+    saveSoundTriggers,
+    uploadSoundFile,
+    uploadGifFile
+  } = useSoundboardApi();
 
   const createSoundTrigger = useCallback((): SoundTrigger => {
     return {
@@ -24,24 +33,44 @@ export const useSoundManager = () => {
     return newTrigger;
   }, [createSoundTrigger]);
 
-  const removeSoundTrigger = useCallback((triggerId: string) => {
+  const removeSoundTrigger = useCallback(async (triggerId: string) => {
     setSoundTriggers(prev => {
-      const trigger = prev.find(t => t.id === triggerId);
-      if (trigger) {
-        if (trigger._gifObjectUrl) URL.revokeObjectURL(trigger._gifObjectUrl);
-        if (trigger._objectUrl) URL.revokeObjectURL(trigger._objectUrl);
-      }
-      return prev.filter(t => t.id !== triggerId);
+      const newTriggers = prev.filter(t => t.id !== triggerId);
+      // Save to backend
+      saveSoundTriggers(newTriggers);
+      return newTriggers;
     });
-  }, []);
+  }, [saveSoundTriggers]);
 
-  const updateSoundTrigger = useCallback((triggerId: string, updates: Partial<SoundTrigger>) => {
-    setSoundTriggers(prev => 
-      prev.map(trigger => 
-        trigger.id === triggerId ? { ...trigger, ...updates } : trigger
-      )
-    );
-  }, []);
+  const updateSoundTrigger = useCallback(async (triggerId: string, updates: Partial<SoundTrigger>) => {
+    // Handle file uploads if new files are provided
+    let finalUpdates = { ...updates };
+    
+    if (updates._file) {
+      const soundUrl = await uploadSoundFile(updates._file);
+      if (soundUrl) {
+        finalUpdates.soundUrl = soundUrl;
+        delete finalUpdates._file;
+      }
+    }
+    
+    if (updates._gifFile) {
+      const gifUrl = await uploadGifFile(updates._gifFile);
+      if (gifUrl) {
+        finalUpdates.gifUrl = gifUrl;
+        delete finalUpdates._gifFile;
+      }
+    }
+    
+    setSoundTriggers(prev => {
+      const newTriggers = prev.map(trigger => 
+        trigger.id === triggerId ? { ...trigger, ...finalUpdates } : trigger
+      );
+      // Save to backend
+      saveSoundTriggers(newTriggers);
+      return newTriggers;
+    });
+  }, [uploadSoundFile, uploadGifFile, saveSoundTriggers]);
 
   const parseKeyCombo = useCallback((comboStr: string): KeyCombo => {
     if (!comboStr) return { shift: false, alt: false, ctrl: false };
@@ -58,37 +87,6 @@ export const useSoundManager = () => {
     return /\.(mp3|wav|ogg|aac|m4a|webm)(\?.*)?$/.test(url);
   }, []);
 
-  const applyGifPosition = useCallback((img: HTMLImageElement, position: string) => {
-    const pos = position || 'bottom-left';
-    img.style.position = 'absolute';
-    img.style.zIndex = '1000';
-    img.style.maxHeight = '200px';
-    img.style.pointerEvents = 'none';
-
-    switch (pos) {
-      case 'top-left':
-        img.style.top = '10px';
-        img.style.left = '10px';
-        break;
-      case 'top-right':
-        img.style.top = '10px';
-        img.style.right = '10px';
-        break;
-      case 'bottom-right':
-        img.style.bottom = '10px';
-        img.style.right = '10px';
-        break;
-      case 'center':
-        img.style.top = '50%';
-        img.style.left = '50%';
-        img.style.transform = 'translate(-50%, -50%)';
-        break;
-      default:
-        img.style.bottom = '10px';
-        img.style.left = '10px';
-    }
-  }, []);
-
   const playSoundAndGif = useCallback(async (trigger: SoundTrigger): Promise<void> => {
     trigger._lastPlayed = trigger._lastPlayed || 0;
     const now = Date.now();
@@ -103,16 +101,14 @@ export const useSoundManager = () => {
       }
     }
 
-    // Play sound
-    if (trigger._objectUrl || trigger.soundUrl) {
+    // Play sound in admin page
+    if (trigger.soundUrl) {
       try {
         const audio = new Audio();
         audio.volume = trigger.volume ?? 1;
         audio.preload = 'auto';
 
-        if (trigger._objectUrl) {
-          audio.src = trigger._objectUrl;
-        } else if (isAudioUrlValid(trigger.soundUrl)) {
+        if (isAudioUrlValid(trigger.soundUrl)) {
           audio.src = trigger.soundUrl;
         } else {
           console.error('Invalid audio URL');
@@ -141,114 +137,95 @@ export const useSoundManager = () => {
       }
     }
 
-    // Show GIF
-    const gifSrc = trigger._gifObjectUrl || trigger.gifUrl;
-    if (gifSrc && gifSrc.trim()) {
-      if (activeGIFsRef.current.length > 0) {
-        console.warn('GIF already active');
-        return;
-      }
-
-      const stage = document.body; // or a specific container
-      if (!stage) {
-        console.error('Cannot find stage element');
-        return;
-      }
-
-      const img = document.createElement('img');
-      img.src = gifSrc;
-      img.style.opacity = '1';
-      img.style.transition = 'opacity 0.5s ease';
-
-      applyGifPosition(img, trigger.gifPosition);
-
-      stage.appendChild(img);
-      activeGIFsRef.current.push(img);
-
-      setTimeout(() => {
-        img.style.opacity = '0';
-        setTimeout(() => {
-          img.remove();
-          const index = activeGIFsRef.current.indexOf(img);
-          if (index !== -1) activeGIFsRef.current.splice(index, 1);
-        }, 500);
-      }, 3500);
+    // Send GIF trigger to OBS page via localStorage
+    if (trigger.gifUrl && trigger.gifUrl.trim()) {
+      console.log('Admin: Sending GIF trigger to OBS');
+      localStorage.setItem('pendingGifTrigger', JSON.stringify(trigger));
     }
-  }, [isAudioUrlValid, applyGifPosition]);
+
+    console.log('useSoundManager: Sound played in admin, GIF trigger sent to OBS');
+  }, [isAudioUrlValid]);
+
+  // Add keyboard event handler for admin page
+  useEffect(() => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      // Skip if user is typing in an input
+      if (document.activeElement?.tagName === 'INPUT' || 
+          document.activeElement?.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      console.log('Admin: Key pressed:', e.key, 'Shift:', e.shiftKey, 'Alt:', e.altKey, 'Ctrl:', e.ctrlKey);
+
+      let matched = false;
+      soundTriggers.forEach((trigger) => {
+        if (!trigger.keyCombo) return;
+
+        const parts = trigger.keyCombo.toLowerCase().split('+');
+        const hasShift = parts.includes('shift');
+        const hasAlt = parts.includes('alt');
+        const hasCtrl = parts.includes('ctrl');
+        const key = parts.find((p: string) => !['shift', 'alt', 'ctrl'].includes(p));
+
+        console.log('Admin: Checking trigger:', trigger.label, 'keyCombo:', trigger.keyCombo, 'pressed:', e.key);
+
+        if (
+          (!hasShift || e.shiftKey) &&
+          (!hasAlt || e.altKey) &&
+          (!hasCtrl || e.ctrlKey) &&
+          e.key.toLowerCase() === key?.toLowerCase()
+        ) {
+          matched = true;
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          console.log('Admin: ✅ MATCH! Playing sound and sending GIF to OBS for:', trigger.label);
+          playSoundAndGif(trigger);
+        }
+      });
+      
+      if (!matched) {
+        console.log('Admin: No triggers matched for this key combination');
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown, true);
+    console.log('Admin: Keyboard event listener attached');
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true);
+      console.log('Admin: Keyboard event listener removed');
+    };
+  }, [soundTriggers, playSoundAndGif]);
 
   const stopAllSounds = useCallback(() => {
     playingAudioMapRef.current.forEach(audio => audio.pause());
     playingAudioMapRef.current.clear();
   }, []);
 
-  const saveTriggers = useCallback(() => {
-    const saved: SavedSoundTrigger[] = soundTriggers.map(trigger => ({
-      label: trigger.label,
-      soundUrl: trigger.soundUrl,
-      gifUrl: trigger.gifUrl,
-      keyCombo: trigger.keyCombo,
-      volume: trigger.volume,
-      gifPosition: trigger.gifPosition
-    }));
-    localStorage.setItem('soundTriggers', JSON.stringify(saved));
-  }, [soundTriggers]);
-
-  const loadTriggers = useCallback(() => {
-    const saved = localStorage.getItem('soundTriggers');
-    if (saved) {
-      try {
-        const parsed: SavedSoundTrigger[] = JSON.parse(saved);
-        const triggers: SoundTrigger[] = parsed.map(saved => ({
-          ...saved,
-          id: Math.random().toString(36).substr(2, 9)
-        }));
-        setSoundTriggers(triggers);
-      } catch (e) {
-        console.warn('Failed to load saved triggers:', e);
-      }
-    }
-  }, []);
-
-  // Keyboard event handler
+  // Load triggers from API on mount
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Skip if user is typing in an input or listening for key combo
-      if (document.activeElement?.tagName === 'INPUT' || 
-          document.activeElement?.tagName === 'TEXTAREA' ||
-          (document.activeElement as any)?.textContent?.includes('Listening')) {
-        return;
-      }
-
-      soundTriggers.forEach(trigger => {
-        const combo = parseKeyCombo(trigger.keyCombo);
-        if (
-          (!combo.shift || e.shiftKey) &&
-          (!combo.alt || e.altKey) &&
-          (!combo.ctrl || e.ctrlKey) &&
-          e.key.toLowerCase() === combo.key?.toLowerCase()
-        ) {
-          e.preventDefault();
-          playSoundAndGif(trigger);
-        }
-      });
+    const loadTriggers = async () => {
+      const triggers = await getSoundTriggers();
+      // Convert SoundTriggerData to SoundTrigger with proper defaults
+      const convertedTriggers: SoundTrigger[] = triggers.map(trigger => ({
+        id: trigger.id,
+        label: trigger.label,
+        soundUrl: trigger.soundUrl || '',
+        gifUrl: trigger.gifUrl || '',
+        keyCombo: trigger.keyCombo,
+        volume: trigger.volume,
+        gifPosition: (trigger.gifPosition as SoundTrigger['gifPosition']) || 'bottom-left'
+      }));
+      setSoundTriggers(convertedTriggers);
     };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [soundTriggers, parseKeyCombo, playSoundAndGif]);
-
-  // Auto-save triggers when they change
-  useEffect(() => {
-    saveTriggers();
-  }, [saveTriggers]);
-
-  // Load triggers on mount
-  useEffect(() => {
     loadTriggers();
-  }, [loadTriggers]);
+  }, [getSoundTriggers]);
 
   return {
     soundTriggers,
+    loading,
+    error,
     addSoundTrigger,
     removeSoundTrigger,
     updateSoundTrigger,
