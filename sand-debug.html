@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sand Mode Debug</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #222;
+      color: white;
+      font-family: sans-serif;
+    }
+    canvas {
+      border: 1px solid #555;
+      background: #000;
+    }
+    #debug {
+      margin-top: 10px;
+      background: rgba(0,0,0,0.8);
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Sand Mode Debug Test</h1>
+  <canvas id="canvas" width="405" height="720"></canvas>
+  <div id="debug">Starting...</div>
+
+  <script>
+    console.log('🏖️ Sand Mode Debug Starting...');
+    
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const debug = document.getElementById('debug');
+    
+    let orbs = [];
+    let frameCount = 0;
+    
+    // Sand physics constants
+    const GRAVITY = 0.8;
+    const FRICTION = 0.95;
+    const BOUNCE = 0.3;
+    const COLLISION_DIST = 1.2;
+    
+    class SandOrb {
+      constructor(x, y, size, color, label) {
+        this.x = x;
+        this.y = y;
+        this.size = size;
+        this.vx = (Math.random() - 0.5) * 1;
+        this.vy = 0;
+        this.color = color;
+        this.label = label;
+        this.onGround = false;
+        this.id = Math.random().toString(36).substr(2, 9);
+        
+        console.log(`Created sand orb: ${this.label} at ${this.x}, ${this.y}`);
+      }
+      
+      update() {
+        if (!this.onGround) {
+          // Apply gravity
+          this.vy += GRAVITY;
+          this.x += this.vx;
+          this.y += this.vy;
+          
+          // Ground collision
+          if (this.y + this.size >= canvas.height - 10) {
+            this.y = canvas.height - 10 - this.size;
+            this.vy *= -BOUNCE;
+            this.vx *= FRICTION;
+            
+            if (Math.abs(this.vy) < 1) {
+              this.vy = 0;
+              this.onGround = true;
+              console.log(`${this.label} settled on ground`);
+            }
+          }
+          
+          // Wall collision
+          if (this.x <= 0 || this.x + this.size >= canvas.width) {
+            this.x = Math.max(0, Math.min(this.x, canvas.width - this.size));
+            this.vx *= -BOUNCE;
+          }
+          
+          // Check collisions with other orbs
+          this.checkCollisions();
+        } else {
+          // On ground - minimal friction
+          this.vx *= 0.98;
+          if (Math.abs(this.vx) > 0.1) {
+            this.x += this.vx;
+          }
+        }
+      }
+      
+      checkCollisions() {
+        for (let other of orbs) {
+          if (other === this) continue;
+          
+          const dx = (this.x + this.size/2) - (other.x + other.size/2);
+          const dy = (this.y + this.size/2) - (other.y + other.size/2);
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const minDistance = (this.size + other.size) / 2 * COLLISION_DIST;
+          
+          if (distance < minDistance && distance > 0) {
+            // Push apart
+            const overlap = minDistance - distance;
+            const pushX = (dx / distance) * overlap * 0.5;
+            const pushY = (dy / distance) * overlap * 0.5;
+            
+            this.x += pushX;
+            this.y += pushY;
+            other.x -= pushX;
+            other.y -= pushY;
+            
+            // Velocity exchange
+            const tempVx = this.vx;
+            const tempVy = this.vy;
+            this.vx = other.vx * BOUNCE;
+            this.vy = other.vy * BOUNCE;
+            other.vx = tempVx * BOUNCE;
+            other.vy = tempVy * BOUNCE;
+          }
+        }
+      }
+      
+      draw() {
+        // Draw circle
+        ctx.beginPath();
+        ctx.arc(this.x + this.size/2, this.y + this.size/2, this.size/2, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        
+        // Draw label
+        ctx.fillStyle = 'white';
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(this.label, this.x + this.size/2, this.y + this.size/2 + 3);
+      }
+    }
+    
+    // Test orbs data
+    const testData = [
+      { size: 16, color: '#ff0000', label: 'R1' },
+      { size: 16, color: '#00ff00', label: 'G1' },
+      { size: 16, color: '#0000ff', label: 'B1' },
+      { size: 16, color: '#ffff00', label: 'Y1' },
+      { size: 16, color: '#ff00ff', label: 'M1' },
+      { size: 16, color: '#00ffff', label: 'C1' },
+      { size: 16, color: '#ffa500', label: 'O1' },
+      { size: 16, color: '#800080', label: 'P1' }
+    ];
+    
+    function addTestOrb() {
+      if (orbs.length >= testData.length) return;
+      
+      const data = testData[orbs.length];
+      const x = canvas.width / 2 - data.size / 2 + (Math.random() * 40 - 20);
+      const y = -data.size;
+      
+      const orb = new SandOrb(x, y, data.size, data.color, data.label);
+      orbs.push(orb);
+      
+      console.log(`Added orb ${orbs.length}: ${data.label}`);
+      updateDebug();
+    }
+    
+    function updateDebug() {
+      const onGround = orbs.filter(o => o.onGround).length;
+      const falling = orbs.length - onGround;
+      
+      debug.innerHTML = `
+        <strong>Sand Mode Debug</strong><br>
+        Total Orbs: ${orbs.length}<br>
+        On Ground: ${onGround}<br>
+        Falling: ${falling}<br>
+        Frame: ${frameCount}<br>
+        Status: ${orbs.length > 0 ? 'ACTIVE' : 'WAITING'}
+      `;
+    }
+    
+    function animate() {
+      frameCount++;
+      
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Update and draw orbs
+      orbs.forEach(orb => {
+        orb.update();
+        orb.draw();
+      });
+      
+      // Add new orb every 90 frames (1.5 seconds)
+      if (frameCount % 90 === 30) {
+        addTestOrb();
+      }
+      
+      updateDebug();
+      requestAnimationFrame(animate);
+    }
+    
+    // Start
+    console.log('🚀 Starting sand mode debug test...');
+    addTestOrb(); // Start with first orb
+    animate();
+  </script>
+</body>
+</html>

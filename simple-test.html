@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Simple Orb Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #222;
+      color: white;
+      font-family: sans-serif;
+    }
+    canvas {
+      border: 1px solid #555;
+      background: #000;
+    }
+    #info {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Simple Orb Animation Test</h1>
+  <canvas id="canvas" width="405" height="720"></canvas>
+  <div id="info">Loading...</div>
+
+  <script>
+    console.log('Starting simple orb test...');
+    
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const info = document.getElementById('info');
+    
+    let orbs = [];
+    let frameCount = 0;
+    
+    // Simple orb class
+    class Orb {
+      constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.vx = (Math.random() - 0.5) * 2;
+        this.vy = 0;
+        this.radius = 15;
+        this.color = color;
+        this.onGround = false;
+      }
+      
+      update() {
+        if (!this.onGround) {
+          this.vy += 0.5; // gravity
+          this.x += this.vx;
+          this.y += this.vy;
+          
+          // Ground collision
+          if (this.y + this.radius >= canvas.height - 10) {
+            this.y = canvas.height - 10 - this.radius;
+            this.vy *= -0.3; // bounce
+            this.vx *= 0.8; // friction
+            
+            if (Math.abs(this.vy) < 1) {
+              this.vy = 0;
+              this.onGround = true;
+            }
+          }
+          
+          // Wall collision
+          if (this.x - this.radius <= 0 || this.x + this.radius >= canvas.width) {
+            this.vx *= -0.5;
+            this.x = Math.max(this.radius, Math.min(this.x, canvas.width - this.radius));
+          }
+        }
+      }
+      
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // Draw number
+        ctx.fillStyle = 'white';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(orbs.indexOf(this) + 1, this.x, this.y + 4);
+      }
+    }
+    
+    // Add orb every 2 seconds
+    function addOrb() {
+      const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500', '#800080'];
+      const color = colors[orbs.length % colors.length];
+      const x = canvas.width / 2 + (Math.random() - 0.5) * 60;
+      const orb = new Orb(x, 0, color);
+      orbs.push(orb);
+      console.log(`Added orb ${orbs.length} at x=${x}`);
+    }
+    
+    // Animation loop
+    function animate() {
+      frameCount++;
+      
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Update and draw orbs
+      orbs.forEach(orb => {
+        orb.update();
+        orb.draw();
+      });
+      
+      // Update info
+      info.innerHTML = `Orbs: ${orbs.length} | Frames: ${frameCount} | Running: YES`;
+      
+      // Add new orb every 120 frames (2 seconds at 60fps)
+      if (frameCount % 120 === 60 && orbs.length < 8) {
+        addOrb();
+      }
+      
+      requestAnimationFrame(animate);
+    }
+    
+    // Start
+    console.log('Canvas size:', canvas.width, 'x', canvas.height);
+    addOrb(); // Start with one orb
+    animate();
+    
+    info.innerHTML = 'Animation started - orbs should be falling!';
+  </script>
+</body>
+</html>

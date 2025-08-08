@@ -174,6 +174,84 @@ export const useOrbApi = () => {
     }
   }, []);
 
+  // Export orbs to downloadable file
+  const exportToFile = useCallback(() => {
+    const exportData = {
+      orbs: orbs.map(orb => ({
+        imgSrc: orb.imgSrc,
+        entryType: orb.entryType,
+        role: orb.role,
+        label: orb.label,
+        ringColor: orb.ringColor,
+        ringWidth: orb.ringWidth,
+        roleIcon: orb.roleIcon,
+        roleIconPosition: orb.roleIconPosition,
+        size: orb.size
+      })),
+      exportDate: new Date().toISOString(),
+      version: '1.0'
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `orbs-server-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    console.log('API: Exported orbs to file:', exportData.orbs.length, 'orbs');
+  }, [orbs]);
+
+  // Import orbs from file
+  const importFromFile = useCallback((): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) {
+          reject(new Error('No file selected'));
+          return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const content = e.target?.result as string;
+            const importData = JSON.parse(content);
+            
+            if (!importData.orbs || !Array.isArray(importData.orbs)) {
+              reject(new Error('Invalid orb backup file format'));
+              return;
+            }
+            
+            console.log('API: Importing orbs from file:', importData.orbs.length);
+            
+            // Clear existing orbs first
+            await clearAllOrbs();
+            
+            // Import the orbs
+            await saveOrbs(importData.orbs);
+            
+            console.log(`API: Successfully imported ${importData.orbs.length} orbs!`);
+            resolve();
+          } catch (error) {
+            console.error('API: Import failed:', error);
+            reject(error);
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    });
+  }, [clearAllOrbs, saveOrbs]);
+
   // Auto-fetch disabled - orbs are loaded manually when needed
   // useEffect(() => {
   //   fetchOrbs().catch(console.error);
@@ -188,5 +266,7 @@ export const useOrbApi = () => {
     updateOrb,
     deleteOrb,
     clearAllOrbs,
+    exportToFile,
+    importFromFile,
   };
 };

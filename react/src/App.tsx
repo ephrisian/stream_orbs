@@ -1,11 +1,27 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { Box } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
 import Navigation from './components/Navigation';
 import { AdminPage } from './pages/AdminPage';
 import { ObsPage } from './pages/ObsPage';
 import './App.css'
+
+// Wrapper component to use hooks
+const AppContent: React.FC = () => {
+  return (
+    <>
+      <Navigation />
+      <Box sx={{ mt: 8 }}> {/* Add top margin for fixed AppBar */}
+        <Routes>
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </Routes>
+      </Box>
+    </>
+  );
+};
 
 const theme = createTheme({
   palette: {
@@ -61,11 +77,7 @@ const App: React.FC = () => {
         <Route path="/*" element={
           <ThemeProvider theme={theme}>
             <CssBaseline />
-            <Navigation />
-            <Routes>
-              <Route path="/admin" element={<AdminPage />} />
-              <Route path="*" element={<Navigate to="/admin" replace />} />
-            </Routes>
+            <AppContent />
           </ThemeProvider>
         } />
       </Routes>

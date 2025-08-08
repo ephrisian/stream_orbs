@@ -94,15 +94,9 @@ export const useOrbManager = () => {
     setOrbs(currentOrbs => {
       const game = getGameById(currentGameId);
       if (game && game.handleAddOrb) {
-        try {
-          const result = game.handleAddOrb(orb, currentOrbs, gameStateRef.current);
-          setGameState(result.state);
-          return [...currentOrbs, result.orb];
-        } catch (error) {
-          console.error(`Error adding orb in ${currentGameId} mode:`, error);
-          // Fallback to basic orb addition
-          return [...currentOrbs, orb];
-        }
+        const result = game.handleAddOrb(orb, currentOrbs, gameStateRef.current);
+        setGameState(result.state);
+        return [...currentOrbs, result.orb];
       }
       return [...currentOrbs, orb];
     });
@@ -174,7 +168,7 @@ export const useOrbManager = () => {
   // Re-run a specific orb through the current game (if supported)
   const rerunOrb = useCallback((orbId: string) => {
     const game = getGameById(currentGameId);
-    if (game?.id === 'pachinko') { // Pachinko mode
+    if (game?.id === 'sand') { // Only pachinko supports rerun for now
       setOrbs(currentOrbs => currentOrbs.map(orb => {
         if (orb.id === orbId) {
           // Reset orb for pachinko rerun
@@ -194,43 +188,11 @@ export const useOrbManager = () => {
         }
         return orb;
       }));
-    } else if (game?.id === 'duckrace') { // Duck Race mode
-      setOrbs(currentOrbs => currentOrbs.map(orb => {
-        if (orb.id === orbId) {
-          // Get the lane for this orb from game state
-          const currentState = gameStateRef.current as any;
-          const lane = currentState?.lanes?.[orbId] || 0;
-          
-          // Reset orb to start position
-          return {
-            ...orb,
-            x: 50,
-            y: 100 + (lane * 80),
-            vx: 0,
-            vy: 0
-          };
-        }
-        return orb;
-      }));
-      
-      // Reset progress for this orb in game state
-      setGameState(currentState => {
-        const duckState = currentState as any;
-        return {
-          ...duckState,
-          raceProgress: {
-            ...duckState.raceProgress,
-            [orbId]: 0
-          },
-          finishPositions: duckState.finishPositions?.filter((id: string) => id !== orbId) || []
-        };
-      });
     }
   }, [currentGameId]);
 
   // Switch to a different game mode
   const switchGameMode = useCallback((gameId: string) => {
-    console.log('switchGameMode called with:', gameId);
     const game = getGameById(gameId);
     if (!game) {
       console.error(`Game with id "${gameId}" not found`);
@@ -244,7 +206,6 @@ export const useOrbManager = () => {
     const result = game.initialize(orbsRef.current);
     setOrbs(result.orbs);
     setGameState(result.state);
-    console.log('Game switched successfully to:', gameId);
   }, []);
 
   // Update game configuration

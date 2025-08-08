@@ -16,11 +16,14 @@ const Navigation: React.FC = () => {
   };
 
   return (
-    <AppBar position="static" sx={{ mb: 2, backgroundColor: '#1976d2' }}>
+    <AppBar position="fixed" sx={{ backgroundColor: '#1976d2', zIndex: 1300 }}>
       <Toolbar>
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1, color: '#ffffff' }}>
+        <Typography variant="h6" component="div" sx={{ color: '#ffffff', mr: 3 }}>
           ✨ Stream Orbs
         </Typography>
+        
+        <Box sx={{ flexGrow: 1 }} />
+        
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           {navItems.map((item) => (
             <Button

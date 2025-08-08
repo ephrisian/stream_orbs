@@ -269,14 +269,29 @@ export const ObsPage: React.FC = () => {
       }
     };
 
+    // Check for game mode changes from admin
+    const checkGameMode = () => {
+      try {
+        const savedMode = localStorage.getItem('gameMode');
+        if (savedMode) {
+          console.log('OBS: Game mode found:', savedMode);
+          // Game mode switching would be handled here if needed
+        }
+      } catch (error) {
+        console.error('OBS: Error checking game mode:', error);
+      }
+    };
+
     // Initial load
     loadOrbsFromAPI();
+    checkGameMode();
 
     // Set up polling every 2 seconds for live updates
     console.log('OBS: Setting up polling interval...');
     const pollInterval = setInterval(() => {
       console.log('OBS: Interval triggered');
       loadOrbsFromAPI();
+      checkGameMode();
     }, 2000);
 
     return () => {

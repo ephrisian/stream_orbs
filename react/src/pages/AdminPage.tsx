@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Box, Stack } from '@mui/material';
+import { Box } from '@mui/material';
 import { Canvas } from '../components/Canvas';
 import Soundboard from '../components/Soundboard';
-import OrbAdminClean from '../components/OrbAdminClean';
+import OrbAdminSimple from '../components/OrbAdminSimple';
+import { GameModeAdmin } from '../components/GameModeAdmin';
 import { useOrbManager } from '../hooks/useOrbManager';
 import { useSoundManager } from '../hooks/useSoundManager';
 
@@ -11,20 +12,21 @@ export const AdminPage: React.FC = () => {
   
   const {
     orbs,
+    currentGameId,
+    gameState,
     addOrb,
     removeOrb,
     updateOrb,
     clearAllOrbs,
-    startAnimation
+    rerunOrb,
+    startAnimation,
+    updateGameConfig,
+    getGameConfig,
+    switchGameMode
   } = useOrbManager();
-
-  console.log('Admin Page - Current orbs count:', orbs.length);
-  console.log('Admin Page - Orbs array:', orbs);
 
   const {
     soundTriggers,
-    loading,
-    error,
     addSoundTrigger,
     removeSoundTrigger,
     updateSoundTrigger,
@@ -51,55 +53,82 @@ export const AdminPage: React.FC = () => {
   }, []);
 
   return (
-    <Box sx={{ p: 4, backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={4} alignItems="flex-start">
-        {/* Left: Canvas (conditionally rendered) */}
-        {showPreview && (
-          <Box sx={{ 
-            background: '#ffffff', 
-            borderRadius: 2, 
-            boxShadow: 2, 
-            p: 2, 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
-            minHeight: 720,
-            width: { xs: '100%', md: '405px' },
-            flexShrink: 0
-          }}>
-            <Canvas 
-              onAnimationStart={handleCanvasReady}
-              backgroundColor="#00ff00"
-              showBorder={true}
-            />
-          </Box>
-        )}
-        
-        {/* Right: Soundboard (top), Orb Admin (bottom) */}
-        <Box sx={{ flex: 1, width: '100%' }}>
-          <Box sx={{ mb: 4 }}>
-            <Soundboard 
-              soundTriggers={soundTriggers}
-              onAddSoundTrigger={addSoundTrigger}
-              onRemoveSoundTrigger={removeSoundTrigger}
-              onUpdateSoundTrigger={updateSoundTrigger}
-              onPlaySoundAndGif={playSoundAndGif}
-              onStopAllSounds={stopAllSounds}
-            />
-          </Box>
-          <Box>
-            <OrbAdminClean 
-              orbs={orbs}
-              onAddOrb={addOrb}
-              onUpdateOrb={updateOrb}
-              onRemoveOrb={removeOrb}
-              onClearAllOrbs={clearAllOrbs}
-              showPreview={showPreview}
-              onTogglePreview={handleTogglePreview}
-            />
-          </Box>
+    <Box sx={{ 
+      backgroundColor: '#f5f5f5', 
+      minHeight: '100vh',
+      position: 'relative',
+      p: { xs: 2, md: 2 }
+    }}>
+      {/* Fixed Canvas - Always locked to left side */}
+      {showPreview && (
+        <Box sx={{ 
+          position: 'fixed',
+          left: 16,
+          top: 80,
+          zIndex: 1000,
+          background: '#ffffff', 
+          borderRadius: 2, 
+          boxShadow: 3, 
+          p: 2, 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: 720,
+          width: 405,
+          border: '2px solid #e0e0e0'
+        }}>
+          <Canvas 
+            onAnimationStart={handleCanvasReady}
+            backgroundColor="#00ff00"
+            showBorder={true}
+          />
         </Box>
-      </Stack>
+      )}
+      
+      {/* Admin Content - with margin when canvas is shown */}
+      <Box sx={{ 
+        ml: showPreview ? '440px' : 0, // 405px canvas + 35px spacing
+        minWidth: '1000px', // Increased to ensure participant toggle and delete stay in same row
+        maxWidth: 'calc(100vw - 460px)', // Prevent overflow when canvas is shown
+        transition: 'margin 0.3s ease'
+      }}>
+        <Box sx={{ mb: 4 }}>
+          <Soundboard 
+            soundTriggers={soundTriggers}
+            onAddSoundTrigger={addSoundTrigger}
+            onRemoveSoundTrigger={removeSoundTrigger}
+            onUpdateSoundTrigger={updateSoundTrigger}
+            onPlaySoundAndGif={playSoundAndGif}
+            onStopAllSounds={stopAllSounds}
+          />
+        </Box>
+        
+        <Box sx={{ mb: 2 }}>
+          <GameModeAdmin 
+            currentGameId={currentGameId}
+            gameState={gameState}
+            gameConfig={getGameConfig()}
+            orbs={orbs}
+            onGameConfigChange={updateGameConfig}
+            onRerunOrb={rerunOrb}
+            onGameModeChange={switchGameMode}
+          />
+        </Box>
+        
+        <Box>
+          <OrbAdminSimple 
+            orbs={orbs}
+            onAddOrb={addOrb}
+            onUpdateOrb={updateOrb}
+            onRemoveOrb={removeOrb}
+            onClearAllOrbs={clearAllOrbs}
+            showPreview={showPreview}
+            onTogglePreview={handleTogglePreview}
+            animationMode={currentGameId || 'physics'}
+            onRerunOrbThroughPachinko={rerunOrb}
+          />
+        </Box>
+      </Box>
     </Box>
   );
 };
