@@ -3,6 +3,7 @@ import { Box } from '@mui/material';
 import { Canvas } from '../components/Canvas';
 import Soundboard from '../components/Soundboard';
 import OrbAdminSimple from '../components/OrbAdminSimple';
+import BannerControl from '../components/BannerControl';
 import { GameModeAdmin } from '../components/GameModeAdmin';
 import { useOrbManager } from '../hooks/useOrbManager';
 import { useSoundManager } from '../hooks/useSoundManager';
@@ -92,6 +93,10 @@ export const AdminPage: React.FC = () => {
         maxWidth: 'calc(100vw - 460px)', // Prevent overflow when canvas is shown
         transition: 'margin 0.3s ease'
       }}>
+        <Box sx={{ mb: 4 }}>
+          <BannerControl />
+        </Box>
+        
         <Box sx={{ mb: 4 }}>
           <Soundboard 
             soundTriggers={soundTriggers}
