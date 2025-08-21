@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 300px;
+      padding: 15px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      margin: 0;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .status {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+    
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .status-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .status-label {
+      font-size: 14px;
+    }
+    
+    .status-value {
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-left: 8px;
+    }
+    
+    .status-indicator.active {
+      background: #4ade80;
+      box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+    }
+    
+    .status-indicator.inactive {
+      background: #f87171;
+      box-shadow: 0 0 8px rgba(248, 113, 113, 0.6);
+    }
+    
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+    
+    .btn:active {
+      transform: translateY(0);
+    }
+    
+    .btn.primary {
+      background: rgba(34, 197, 94, 0.8);
+      border-color: rgba(34, 197, 94, 1);
+    }
+    
+    .btn.secondary {
+      background: rgba(239, 68, 68, 0.8);
+      border-color: rgba(239, 68, 68, 1);
+    }
+    
+    .footer {
+      margin-top: 15px;
+      text-align: center;
+      font-size: 12px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎮 Stream Orbs</h1>
+    <div>Whatnot Chat Monitor</div>
+  </div>
+  
+  <div class="status">
+    <div class="status-item">
+      <span class="status-label">Chat Detection:</span>
+      <div style="display: flex; align-items: center;">
+        <span class="status-value" id="chatStatus">Checking...</span>
+        <div class="status-indicator" id="chatIndicator"></div>
+      </div>
+    </div>
+    
+    <div class="status-item">
+      <span class="status-label">Monitoring:</span>
+      <div style="display: flex; align-items: center;">
+        <span class="status-value" id="monitorStatus">Checking...</span>
+        <div class="status-indicator" id="monitorIndicator"></div>
+      </div>
+    </div>
+    
+    <div class="status-item">
+      <span class="status-label">Server:</span>
+      <div style="display: flex; align-items: center;">
+        <span class="status-value" id="serverStatus">Checking...</span>
+        <div class="status-indicator" id="serverIndicator"></div>
+      </div>
+    </div>
+    
+    <div class="status-item">
+      <span class="status-label">Admin Panel:</span>
+      <div style="display: flex; align-items: center;">
+        <span class="status-value" id="adminStatus">Checking...</span>
+        <div class="status-indicator" id="adminIndicator"></div>
+      </div>
+    </div>
+    
+    <div class="status-item">
+      <span class="status-label">WS Bridge:</span>
+      <div style="display: flex; align-items: center;">
+        <span class="status-value" id="bridgeStatus">Checking...</span>
+        <div class="status-indicator" id="bridgeIndicator"></div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="controls">
+    <button class="btn primary" id="toggleBtn">Start Monitoring</button>
+    <button class="btn" id="testBtn">Test Full Connection</button>
+    <button class="btn" id="testAdminBtn">Test Admin Panel</button>
+    <button class="btn" id="detectBtn">Detect Chat</button>
+    <button class="btn" id="openStreamOrbs">Open Admin Panel</button>
+  </div>
+  
+  <div class="footer">
+    Monitor Whatnot chat and display in OBS
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { Box } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -68,7 +68,7 @@ const theme = createTheme({
 
 const App: React.FC = () => {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         {/* OBS route - completely separate, no theme or navigation */}
         <Route path="/obs" element={<ObsPage />} />
@@ -81,7 +81,7 @@ const App: React.FC = () => {
           </ThemeProvider>
         } />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
 

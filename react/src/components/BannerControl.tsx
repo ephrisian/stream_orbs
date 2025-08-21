@@ -6,6 +6,7 @@ import {
   Typography,
   Card,
   CardContent,
+  CardActions,
   Stack,
   Chip,
   IconButton,
@@ -23,13 +24,19 @@ import {
   Stop as StopIcon,
   Timer as TimerIcon,
   Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon
+  VisibilityOff as VisibilityOffIcon,
+  SkipNext as SkipNextIcon,
+  SkipPrevious as SkipPreviousIcon
 } from '@mui/icons-material';
+import { API_ENDPOINTS, getUploadUrl, listUploads, deleteUpload, type UploadedFile } from '../config/api';
 
 interface BannerImage {
   id: string;
   url: string;
   name: string;
+  filename: string; // Add filename for duplicate checking
+  size?: number;
+  uploadDate?: string;
   duration?: number; // Optional override duration per image
 }
 
@@ -49,18 +56,19 @@ interface BannerControlProps {
 
 const BannerControl: React.FC<BannerControlProps> = ({ onBannerUpdate }) => {
   const [images, setImages] = useState<BannerImage[]>([]);
+  const [allUploadedFiles, setAllUploadedFiles] = useState<UploadedFile[]>([]);
   const [settings, setSettings] = useState<BannerSettings>({
-    enabled: false,
+    enabled: true, // Enable banner by default
     defaultDuration: 30,
     position: 'top',
     height: 120,
     autoStart: false,
     loop: true
   });
-  const [isPlaying, setIsPlaying] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [previewVisible, setPreviewVisible] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
@@ -80,9 +88,13 @@ const BannerControl: React.FC<BannerControlProps> = ({ onBannerUpdate }) => {
       timestamp: Date.now()
     };
     
+    console.log('BannerControl: Syncing banner data:', bannerData);
     localStorage.setItem('bannerData', JSON.stringify(bannerData));
     
-    // Notify OBS page of changes
+    // Notify other components of changes (for same-page updates)
+    window.dispatchEvent(new CustomEvent('bannerDataChanged'));
+    
+    // Notify OBS page of changes (for cross-tab updates)
     window.dispatchEvent(new StorageEvent('storage', {
       key: 'bannerData',
       newValue: JSON.stringify(bannerData),
@@ -94,14 +106,94 @@ const BannerControl: React.FC<BannerControlProps> = ({ onBannerUpdate }) => {
     }
   }, [currentImageIndex, isPlaying, timeRemaining, onBannerUpdate]);
 
+  // Load existing images from server
+  const loadExistingImages = useCallback(async () => {
+    try {
+      const response = await fetch(API_ENDPOINTS.listUploads);
+      if (response.ok) {
+        const allFiles = await response.json();
+        const imageFiles = allFiles.filter((file: any) => file.type === 'image');
+        
+        const existingImages: BannerImage[] = imageFiles.map((file: any) => ({
+          id: file.filename, // Use filename as ID for consistency
+          url: file.url,
+          name: file.originalName,
+          filename: file.filename,
+          size: file.size,
+          uploadDate: file.uploadDate
+        }));
+        
+        console.log('BannerControl: Loaded', existingImages.length, 'existing images');
+        setImages(existingImages);
+        syncWithObs(settings, existingImages);
+      }
+    } catch (error) {
+      console.error('BannerControl: Error loading existing images:', error);
+    }
+  }, [settings, syncWithObs]);
+
+  // Delete image from server and local state
+    const loadAllUploadedFiles = useCallback(async () => {
+    try {
+      const files = await listUploads();
+      setAllUploadedFiles(files);
+    } catch (error) {
+      console.error('Error loading all uploaded files:', error);
+    }
+  }, []);
+
+  const addImageToBanner = useCallback((filename: string) => {
+    const imageUrl = getUploadUrl(`uploads/${filename}`);
+    const newImage: BannerImage = {
+      id: crypto.randomUUID(),
+      name: filename,
+      url: imageUrl,
+      filename: filename,
+      duration: settings.defaultDuration
+    };
+
+    // Check for duplicates by filename
+    if (!images.some(img => img.filename === filename)) {
+      const updatedImages = [...images, newImage];
+      setImages(updatedImages);
+      syncWithObs(settings, updatedImages);
+    }
+  }, [images, settings, syncWithObs]);
+
+  const deleteFileFromServer = useCallback(async (filename: string) => {
+    try {
+      const success = await deleteUpload(filename);
+      if (success) {
+        setAllUploadedFiles(prev => prev.filter(f => f.filename !== filename));
+        // Also remove from banner images if it exists there
+        setImages(prev => prev.filter(img => !img.url.endsWith(filename)));
+        // Sync will be called by the effect when images change
+      }
+      return success;
+    } catch (error) {
+      console.error('Error deleting file from server:', error);
+      return false;
+    }
+  }, []);
+
   // Add images
   const handleAddImages = useCallback(async (files: FileList) => {
     const uploadPromises = Array.from(files).map(async (file) => {
+      // Check for duplicates by name and size
+      const existingImage = images.find(img => 
+        img.name === file.name && img.size === file.size
+      );
+      
+      if (existingImage) {
+        console.log('BannerControl: Skipping duplicate image:', file.name);
+        return null; // Skip duplicate
+      }
+      
       const formData = new FormData();
       formData.append('gif', file); // Using 'gif' endpoint since it handles images
       
       try {
-        const response = await fetch('http://localhost:3001/api/upload/gif', {
+        const response = await fetch(API_ENDPOINTS.uploadGif, {
           method: 'POST',
           body: formData,
         });
@@ -109,9 +201,11 @@ const BannerControl: React.FC<BannerControlProps> = ({ onBannerUpdate }) => {
         if (response.ok) {
           const result = await response.json();
           return {
-            id: Math.random().toString(36).substr(2, 9),
+            id: result.filename, // Use filename as consistent ID
             url: result.url, // Server URL path
-            name: file.name
+            name: file.name,
+            filename: result.filename,
+            size: file.size
           };
         } else {
           console.error('Failed to upload image:', file.name);
@@ -134,7 +228,18 @@ const BannerControl: React.FC<BannerControlProps> = ({ onBannerUpdate }) => {
   }, [images, settings, syncWithObs]);
 
   // Remove image
-  const handleRemoveImage = useCallback((imageId: string) => {
+  const handleRemoveImage = useCallback(async (imageId: string) => {
+    const imageToRemove = images.find(img => img.id === imageId);
+    
+    if (imageToRemove && imageToRemove.filename) {
+      // Delete from server first
+      const deleteSuccess = await deleteFileFromServer(imageToRemove.filename);
+      if (!deleteSuccess) {
+        console.error('Failed to delete image from server');
+        return; // Don't remove from UI if server deletion failed
+      }
+    }
+    
     const updatedImages = images.filter(img => img.id !== imageId);
     setImages(updatedImages);
     
@@ -144,7 +249,7 @@ const BannerControl: React.FC<BannerControlProps> = ({ onBannerUpdate }) => {
     }
     
     syncWithObs(settings, updatedImages);
-  }, [images, currentImageIndex, settings, syncWithObs]);
+  }, [images, currentImageIndex, settings, syncWithObs, deleteFileFromServer]);
 
   // Clear all images
   const handleClearImages = useCallback(() => {
@@ -210,26 +315,19 @@ const BannerControl: React.FC<BannerControlProps> = ({ onBannerUpdate }) => {
   const handleImageSelect = useCallback((index: number) => {
     setCurrentImageIndex(index);
     if (isPlaying) {
-      const duration = images[index]?.duration || settings.defaultDuration;
-      setTimeRemaining(duration);
-    }
-    syncWithObs(settings, images, index);
-  }, [isPlaying, images, settings, syncWithObs]);
-
-  // Update timers when duration changes
-  useEffect(() => {
-    if (isPlaying && images.length > 0) {
-      // Restart timers with new duration
+      // Restart timers for the new image
       if (timerRef.current) clearInterval(timerRef.current);
       if (countdownRef.current) clearInterval(countdownRef.current);
       
-      const duration = images[currentImageIndex]?.duration || settings.defaultDuration;
+      const duration = images[index]?.duration || settings.defaultDuration;
       setTimeRemaining(duration);
       
+      // Restart countdown
       countdownRef.current = setInterval(() => {
         setTimeRemaining(prev => prev <= 1 ? 0 : prev - 1);
       }, 1000);
       
+      // Restart image rotation timer
       timerRef.current = setInterval(() => {
         setCurrentImageIndex(prevIndex => {
           const nextIndex = (prevIndex + 1) % images.length;
@@ -239,7 +337,31 @@ const BannerControl: React.FC<BannerControlProps> = ({ onBannerUpdate }) => {
         });
       }, duration * 1000);
     }
-  }, [settings.defaultDuration, currentImageIndex, images, isPlaying]);
+    syncWithObs(settings, images, index);
+  }, [isPlaying, images, settings, syncWithObs]);
+
+  // Navigate to next image
+  const handleNextImage = useCallback(() => {
+    if (images.length === 0) return;
+    const nextIndex = (currentImageIndex + 1) % images.length;
+    handleImageSelect(nextIndex);
+  }, [images.length, currentImageIndex, handleImageSelect]);
+
+  // Navigate to previous image
+  const handlePrevImage = useCallback(() => {
+    if (images.length === 0) return;
+    const prevIndex = currentImageIndex === 0 ? images.length - 1 : currentImageIndex - 1;
+    handleImageSelect(prevIndex);
+  }, [images.length, currentImageIndex, handleImageSelect]);
+
+  // Update individual image duration
+  const handleImageDurationChange = useCallback((imageId: string, newDuration: number) => {
+    const updatedImages = images.map(img => 
+      img.id === imageId ? { ...img, duration: newDuration } : img
+    );
+    setImages(updatedImages);
+    syncWithObs(settings, updatedImages);
+  }, [images, settings, syncWithObs]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -249,6 +371,18 @@ const BannerControl: React.FC<BannerControlProps> = ({ onBannerUpdate }) => {
       images.forEach(img => URL.revokeObjectURL(img.url));
     };
   }, []);
+
+  // Initial sync when component mounts
+  useEffect(() => {
+    console.log('BannerControl: Initial sync with settings:', settings);
+    syncWithObs(settings, images);
+  }, [syncWithObs]); // Run when syncWithObs is ready
+
+  // Load existing images on mount
+  useEffect(() => {
+    loadExistingImages();
+    loadAllUploadedFiles();
+  }, [loadExistingImages, loadAllUploadedFiles]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -295,6 +429,34 @@ const BannerControl: React.FC<BannerControlProps> = ({ onBannerUpdate }) => {
               size="small"
               sx={{ width: 120 }}
             />
+            
+            {/* Height Presets */}
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <Button
+                size="small"
+                variant={settings.height === 80 ? "contained" : "outlined"}
+                onClick={() => handleSettingsChange({ height: 80 })}
+                sx={{ minWidth: 'auto', px: 1, fontSize: '0.7rem' }}
+              >
+                80px
+              </Button>
+              <Button
+                size="small"
+                variant={settings.height === 120 ? "contained" : "outlined"}
+                onClick={() => handleSettingsChange({ height: 120 })}
+                sx={{ minWidth: 'auto', px: 1, fontSize: '0.7rem' }}
+              >
+                120px
+              </Button>
+              <Button
+                size="small"
+                variant={settings.height === 200 ? "contained" : "outlined"}
+                onClick={() => handleSettingsChange({ height: 200 })}
+                sx={{ minWidth: 'auto', px: 1, fontSize: '0.7rem' }}
+              >
+                200px
+              </Button>
+            </Box>
             
             <TextField
               label="Duration (sec)"
@@ -354,6 +516,27 @@ const BannerControl: React.FC<BannerControlProps> = ({ onBannerUpdate }) => {
               {isPlaying ? 'Stop' : 'Start'} Slideshow
             </Button>
 
+            {/* Navigation Controls */}
+            <Button
+              variant="outlined"
+              startIcon={<SkipPreviousIcon />}
+              onClick={handlePrevImage}
+              disabled={images.length === 0}
+              size="small"
+            >
+              Previous
+            </Button>
+
+            <Button
+              variant="outlined"
+              startIcon={<SkipNextIcon />}
+              onClick={handleNextImage}
+              disabled={images.length === 0}
+              size="small"
+            >
+              Next
+            </Button>
+
             <Button
               variant="outlined"
               startIcon={<DeleteIcon />}
@@ -385,6 +568,107 @@ const BannerControl: React.FC<BannerControlProps> = ({ onBannerUpdate }) => {
         </CardContent>
       </Card>
 
+      {/* Image Library Management */}
+      <Card sx={{ mb: 2 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Image Library ({allUploadedFiles.length} files)
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            All uploaded images. Click "Add to Banner" to include in carousel, or "Delete" to remove permanently.
+          </Typography>
+          
+          {allUploadedFiles.length === 0 ? (
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
+              No uploaded images found. Upload some images above to get started.
+            </Typography>
+          ) : (
+            <Box sx={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+              gap: 2,
+              mt: 2
+            }}>
+              {allUploadedFiles.map((file) => (
+                <Card 
+                  key={file.filename} 
+                  variant="outlined"
+                  sx={{ 
+                    border: images.some(img => img.filename === file.filename) ? '2px solid #4caf50' : undefined,
+                    backgroundColor: images.some(img => img.filename === file.filename) ? '#e8f5e8' : undefined
+                  }}
+                >
+                  <Box sx={{ position: 'relative' }}>
+                    <Box
+                      component="img"
+                      src={getUploadUrl(`uploads/${file.filename}`)}
+                      sx={{
+                        width: '100%',
+                        height: 120,
+                        objectFit: 'cover',
+                        display: 'block'
+                      }}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    {images.some(img => img.filename === file.filename) && (
+                      <Chip
+                        label="In Banner"
+                        size="small"
+                        color="success"
+                        sx={{
+                          position: 'absolute',
+                          top: 4,
+                          right: 4,
+                          fontSize: '0.7rem'
+                        }}
+                      />
+                    )}
+                  </Box>
+                  <CardContent sx={{ p: 1 }}>
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        display: 'block',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        mb: 1,
+                        fontSize: '0.75rem'
+                      }}
+                      title={file.filename}
+                    >
+                      {file.filename}
+                    </Typography>
+                  </CardContent>
+                  <CardActions sx={{ p: 1, pt: 0 }}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      disabled={images.some(img => img.filename === file.filename)}
+                      onClick={() => addImageToBanner(file.filename)}
+                      sx={{ fontSize: '0.7rem', minWidth: 'auto', px: 1 }}
+                    >
+                      {images.some(img => img.filename === file.filename) ? 'Added' : 'Add to Banner'}
+                    </Button>
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => deleteFileFromServer(file.filename)}
+                      sx={{ ml: 'auto' }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </CardActions>
+                </Card>
+              ))}
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Preview */}
       {previewVisible && images.length > 0 && (
         <Card sx={{ mb: 2, backgroundColor: '#ffffff' }}>
@@ -404,7 +688,7 @@ const BannerControl: React.FC<BannerControlProps> = ({ onBannerUpdate }) => {
             }}>
               <Box
                 component="img"
-                src={`http://localhost:3001${images[currentImageIndex]?.url}`}
+                src={getUploadUrl(images[currentImageIndex]?.url)}
                 sx={{
                   height: 80,
                   width: 80,
@@ -464,7 +748,7 @@ const BannerControl: React.FC<BannerControlProps> = ({ onBannerUpdate }) => {
                   }}>
                     <Box
                       component="img"
-                      src={`http://localhost:3001${image.url}`}
+                      src={getUploadUrl(image.url)}
                       onClick={() => handleImageSelect(index)}
                       sx={{
                         width: '100%',
@@ -509,6 +793,37 @@ const BannerControl: React.FC<BannerControlProps> = ({ onBannerUpdate }) => {
                     >
                       {image.name}
                     </Typography>
+                  </Box>
+                  
+                  {/* Duration Control */}
+                  <Box sx={{ p: 0.5 }}>
+                    <TextField
+                      size="small"
+                      type="number"
+                      label="Duration (s)"
+                      value={image.duration}
+                      onChange={(e) => handleImageDurationChange(image.id, parseInt(e.target.value) || settings.defaultDuration)}
+                      sx={{ 
+                        '& .MuiInputBase-root': { 
+                          fontSize: '0.75rem',
+                          height: '32px'
+                        },
+                        '& .MuiInputLabel-root': { 
+                          fontSize: '0.7rem',
+                          transform: 'translate(8px, 6px) scale(1)'
+                        },
+                        '& .MuiInputLabel-shrink': {
+                          transform: 'translate(8px, -6px) scale(0.75)'
+                        }
+                      }}
+                      inputProps={{ 
+                        min: 1, 
+                        max: 300,
+                        step: 1,
+                        style: { fontSize: '0.75rem', padding: '4px 8px' }
+                      }}
+                      fullWidth
+                    />
                   </Box>
                 </Box>
               ))}

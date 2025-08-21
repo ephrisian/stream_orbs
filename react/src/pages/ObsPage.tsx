@@ -1,5 +1,7 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { useOrbManager } from '../hooks/useOrbManager';
+import { API_ENDPOINTS, getUploadUrl } from '../config/api';
+import { ChatOverlay } from '../components/ChatOverlay';
 
 interface BannerData {
   settings: {
@@ -306,7 +308,7 @@ export const ObsPage: React.FC = () => {
     const loadOrbsFromAPI = async () => {
       try {
         console.log('OBS: Polling API for orbs...');
-        const response = await fetch('http://192.168.68.68:3001/api/orbs');
+        const response = await fetch(API_ENDPOINTS.orbs);
         if (response.ok) {
           const apiOrbs = await response.json();
           console.log(`OBS: API returned ${apiOrbs.length} orbs`);
@@ -440,14 +442,16 @@ export const ObsPage: React.FC = () => {
       }}
     >
       {/* Banner Display - Clean carousel without timer info */}
-      {bannerData?.settings?.enabled && bannerData?.images?.length > 0 && (
+      {bannerData?.settings?.enabled && (
         <div style={{
           position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
           height: '60px',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: bannerData?.images?.length > 0 
+            ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+            : 'linear-gradient(135deg, #999 0%, #666 100%)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -455,9 +459,9 @@ export const ObsPage: React.FC = () => {
           boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
           overflow: 'hidden',
         }}>
-          {bannerData.images[bannerCurrentImage] && (
+          {bannerData?.images?.length > 0 && bannerData.images[bannerCurrentImage] ? (
             <img 
-              src={`http://localhost:3001${bannerData.images[bannerCurrentImage].url}`}
+              src={getUploadUrl(bannerData.images[bannerCurrentImage].url)}
               alt={`Banner ${bannerCurrentImage + 1}`}
               style={{
                 width: '100%',
@@ -469,6 +473,15 @@ export const ObsPage: React.FC = () => {
                 console.error('OBS Banner image failed to load:', e.currentTarget.src);
               }}
             />
+          ) : (
+            <div style={{
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
+            }}>
+              Banner Ready - Upload Images
+            </div>
           )}
         </div>
       )}
@@ -484,10 +497,20 @@ export const ObsPage: React.FC = () => {
           padding: 0,
           backgroundColor: backgroundColor,
           position: 'absolute',
-          top: bannerData?.settings?.enabled && bannerData?.images?.length > 0 ? '60px' : 0,
+          top: bannerData?.settings?.enabled ? '60px' : 0,
           left: 0,
           cursor: 'crosshair'
         }} 
+      />
+      
+      {/* Chat Overlay */}
+      <ChatOverlay 
+        position="bottom-left"
+        maxMessages={8}
+        showTimestamps={false}
+        showPlatform={true}
+        width={350}
+        height={280}
       />
     </div>
   );

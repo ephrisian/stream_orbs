@@ -4,12 +4,13 @@ import { Canvas } from '../components/Canvas';
 import Soundboard from '../components/Soundboard';
 import OrbAdminSimple from '../components/OrbAdminSimple';
 import BannerControl from '../components/BannerControl';
+import ChatControlWithBridge from '../components/ChatControlWithBridge';
 import { GameModeAdmin } from '../components/GameModeAdmin';
 import { useOrbManager } from '../hooks/useOrbManager';
 import { useSoundManager } from '../hooks/useSoundManager';
 
 export const AdminPage: React.FC = () => {
-  const [showPreview, setShowPreview] = useState(false); // Start with preview hidden
+  const [showPreview, setShowPreview] = useState(true); // Start with preview enabled for Electron
   
   const {
     orbs,
@@ -58,7 +59,8 @@ export const AdminPage: React.FC = () => {
       backgroundColor: '#f5f5f5', 
       minHeight: '100vh',
       position: 'relative',
-      p: { xs: 2, md: 2 }
+      p: { xs: 1, md: 2 },
+      overflow: 'hidden' // Prevent scrollbars in Electron
     }}>
       {/* Fixed Canvas - Always locked to left side */}
       {showPreview && (
@@ -70,7 +72,7 @@ export const AdminPage: React.FC = () => {
           background: '#ffffff', 
           borderRadius: 2, 
           boxShadow: 3, 
-          p: 2, 
+          p: 1, 
           display: 'flex', 
           justifyContent: 'center', 
           alignItems: 'center', 
@@ -89,15 +91,20 @@ export const AdminPage: React.FC = () => {
       {/* Admin Content - with margin when canvas is shown */}
       <Box sx={{ 
         ml: showPreview ? '440px' : 0, // 405px canvas + 35px spacing
-        minWidth: '1000px', // Increased to ensure participant toggle and delete stay in same row
-        maxWidth: 'calc(100vw - 460px)', // Prevent overflow when canvas is shown
-        transition: 'margin 0.3s ease'
+        minWidth: '600px', // Reduced for Electron window
+        maxWidth: showPreview ? 'calc(100vw - 480px)' : '100%', // Adjust for Electron
+        transition: 'margin 0.3s ease',
+        pr: 2 // Add right padding
       }}>
-        <Box sx={{ mb: 4 }}>
+        <Box sx={{ mb: 3 }}>
           <BannerControl />
         </Box>
         
-        <Box sx={{ mb: 4 }}>
+        <Box sx={{ mb: 3 }}>
+          <ChatControlWithBridge />
+        </Box>
+        
+        <Box sx={{ mb: 3 }}>
           <Soundboard 
             soundTriggers={soundTriggers}
             onAddSoundTrigger={addSoundTrigger}
